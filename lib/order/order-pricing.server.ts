@@ -1,0 +1,320 @@
+import { calculateShipping } from './order-calc'
+import { getFinalPricing } from '../product/product.pricing'
+import { extractActivePromotion, PRODUCT_SELECT_FIELDS } from '../product/product.service'
+import { GIFT_MIN_AMOUNT } from '../utils/constants'
+import { SupabaseClient } from '@supabase/supabase-js'
+import type { PricingResult, OrderItemSnapshot } from './pricing-types'
+
+export type { PricingResult, OrderItemSnapshot }
+
+export interface OrderItemInput {
+  productId: string
+  quantity: number
+  promotion_group_id?: string | null
+}
+
+export interface OrderInput {
+  items: OrderItemInput[]
+  delivery_type: 'pickup' | 'quick' | 'regular'
+  delivery_time: string | null
+  shipping_address: string
+  shipping_name: string
+  shipping_phone: string
+  delivery_note: string | null
+  used_coupon_id: string | null
+  used_points: number
+  is_gift: boolean
+  gift_message: string | null
+  gift_recipient_phone?: string
+  /** 선물 알림톡 템플릿용 받는 분 이름 */
+  gift_recipient_name?: string
+  /** 선물 주문 시 주문 완료 알림톡 받을 주문자 연락처 */
+  orderer_phone?: string
+  /** 선물 알림톡 발송 시 사용 (보내는 분 이름) */
+  gift_sender_name?: string
+  payment_method?: string | null
+}
+
+function isCouponExpired(userCoupon: any, coupon: any): boolean {
+  const now = new Date()
+
+  if (userCoupon?.expires_at) {
+    return now >= new Date(userCoupon.expires_at)
+  }
+
+  if (!coupon?.validity_days || coupon.validity_days <= 0) {
+    return true
+  }
+
+  const issuedAt = new Date(userCoupon.created_at)
+  const validUntil = new Date(issuedAt)
+  validUntil.setDate(validUntil.getDate() + coupon.validity_days)
+  return now > validUntil
+}
+
+function ensurePositiveQuantity(items: OrderItemInput[]) {
+  items.forEach((item) => {
+    if (!item.quantity || item.quantity <= 0) {
+      throw new Error('상품 수량이 올바르지 않습니다.')
+    }
+  })
+}
+
+export async function calculateOrderPricing({
+  supabaseAdmin,
+  userId,
+  input,
+}: {
+  supabaseAdmin: SupabaseClient
+  userId: string | null
+  input: OrderInput
+}): Promise<{
+  pricing: PricingResult
+  itemSnapshots: OrderItemSnapshot[]
+}> {
+  if (!input.items || input.items.length === 0) {
+    throw new Error('주문 상품이 없습니다.')
+  }
+
+  ensurePositiveQuantity(input.items)
+
+  const productIds = Array.from(new Set(input.items.map((item) => item.productId)))
+  const { data: products, error: productError } = await supabaseAdmin
+    .from('products')
+    .select(PRODUCT_SELECT_FIELDS)
+    .in('id', productIds)
+
+  if (productError || !products) {
+    throw new Error('상품 정보를 불러오지 못했습니다.')
+  }
+
+  if (products.length !== productIds.length) {
+    throw new Error('일부 상품 정보를 찾을 수 없습니다.')
+  }
+
+  const productMap = new Map<string, any>()
+  products.forEach((product: any) => {
+    productMap.set(product.id, {
+      ...product,
+      promotion: extractActivePromotion(product),
+    })
+  })
+
+  let originalTotal = 0
+  let discountedTotal = 0
+
+  const groupedItems = new Map<string, OrderItemInput[]>()
+  const standaloneItems: OrderItemInput[] = []
+
+  input.items.forEach((item) => {
+    const product = productMap.get(item.productId)
+    if (!product) {
+      throw new Error('상품 정보를 찾을 수 없습니다.')
+    }
+    if (product.status === 'soldout' || product.status === 'deleted') {
+      throw new Error('판매 불가 상품이 포함되어 있습니다.')
+    }
+
+    originalTotal += product.price * item.quantity
+
+    if (item.promotion_group_id) {
+      const group = groupedItems.get(item.promotion_group_id) || []
+      group.push(item)
+      groupedItems.set(item.promotion_group_id, group)
+    } else {
+      standaloneItems.push(item)
+    }
+  })
+
+  const itemSnapshots: OrderItemSnapshot[] = []
+
+  standaloneItems.forEach((item) => {
+    const product = productMap.get(item.productId)
+    const pricing = getFinalPricing({
+      basePrice: product.price,
+      promotion: product.promotion,
+      weightGram: product.weight_gram,
+    })
+    const taxType = product.tax_type === 'tax_free' ? 'tax_free' : 'taxable'
+    discountedTotal += pricing.finalPrice * item.quantity
+    itemSnapshots.push({
+      product_id: item.productId,
+      product_name: product.name,
+      quantity: item.quantity,
+      price: product.price,
+      final_unit_price: pricing.finalPrice,
+      tax_type: taxType,
+    })
+  })
+
+  groupedItems.forEach((items, groupId) => {
+    const firstProduct = productMap.get(items[0].productId)
+    const promotion = firstProduct?.promotion
+    const isBogo = promotion?.type === 'bogo' && promotion?.buy_qty
+
+    if (!isBogo) {
+      items.forEach((item) => {
+        const product = productMap.get(item.productId)
+        const pricing = getFinalPricing({
+          basePrice: product.price,
+          promotion: product.promotion,
+          weightGram: product.weight_gram,
+        })
+        const taxType = product.tax_type === 'tax_free' ? 'tax_free' : 'taxable'
+        discountedTotal += pricing.finalPrice * item.quantity
+        itemSnapshots.push({
+          product_id: item.productId,
+          product_name: product.name,
+          quantity: item.quantity,
+          price: product.price,
+          final_unit_price: pricing.finalPrice,
+          promotion_group_id: groupId,
+          tax_type: taxType,
+        })
+      })
+      return
+    }
+
+    const buyQty = promotion.buy_qty || 1
+    const unitEntries: Array<{ productId: string; price: number }> = []
+    items.forEach((item) => {
+      const product = productMap.get(item.productId)
+      for (let i = 0; i < item.quantity; i += 1) {
+        unitEntries.push({ productId: item.productId, price: product.price })
+      }
+    })
+
+    const freeCount = Math.floor(unitEntries.length / (buyQty + 1))
+    unitEntries.sort((a, b) => a.price - b.price)
+    const freeUnits = unitEntries.slice(0, freeCount)
+
+    const freeCountByProduct = new Map<string, number>()
+    freeUnits.forEach((unit) => {
+      freeCountByProduct.set(unit.productId, (freeCountByProduct.get(unit.productId) || 0) + 1)
+    })
+
+    items.forEach((item) => {
+      const product = productMap.get(item.productId)
+      const freeForProduct = freeCountByProduct.get(item.productId) || 0
+      const paidQty = Math.max(0, item.quantity - freeForProduct)
+      const paidTotal = paidQty * product.price
+      const finalUnitPrice = item.quantity > 0
+        ? Math.round(paidTotal / item.quantity)
+        : product.price
+      const taxType = product.tax_type === 'tax_free' ? 'tax_free' : 'taxable'
+      discountedTotal += paidTotal
+      itemSnapshots.push({
+        product_id: item.productId,
+        product_name: product.name,
+        quantity: item.quantity,
+        price: product.price,
+        final_unit_price: finalUnitPrice,
+        promotion_group_id: groupId,
+        tax_type: taxType,
+      })
+    })
+  })
+
+  if (input.is_gift && discountedTotal < GIFT_MIN_AMOUNT) {
+    throw new Error(`선물하기는 상품금액(할인 적용 후)이 ${GIFT_MIN_AMOUNT}원 이상이어야 합니다.`)
+  }
+
+  const shipping = calculateShipping(discountedTotal, input.delivery_type)
+
+  let couponDiscount = 0
+  if (userId && input.used_coupon_id) {
+    const { data: userCoupon } = await supabaseAdmin
+      .from('user_coupons')
+      .select(`*, coupon:coupons (*)`)
+      .eq('id', input.used_coupon_id)
+      .eq('user_id', userId)
+      .eq('is_used', false)
+      .maybeSingle()
+
+    if (!userCoupon || !userCoupon.coupon) {
+      throw new Error('사용 가능한 쿠폰을 찾을 수 없습니다.')
+    }
+
+    const coupon = userCoupon.coupon
+    if (!coupon.is_active) {
+      throw new Error('비활성화된 쿠폰입니다.')
+    }
+    if (isCouponExpired(userCoupon, coupon)) {
+      throw new Error('만료된 쿠폰입니다.')
+    }
+    if (coupon.min_purchase_amount && discountedTotal < coupon.min_purchase_amount) {
+      throw new Error(`최소 구매 금액 ${coupon.min_purchase_amount}원 이상이어야 합니다.`)
+    }
+
+    if (coupon.discount_type === 'percentage') {
+      couponDiscount = Math.floor(discountedTotal * (coupon.discount_value / 100))
+      if (coupon.max_discount_amount) {
+        couponDiscount = Math.min(couponDiscount, coupon.max_discount_amount)
+      }
+    } else {
+      couponDiscount = coupon.discount_value
+    }
+
+    couponDiscount = Math.min(discountedTotal, Math.max(0, couponDiscount))
+  }
+
+  let appliedPoints = 0
+  if (userId && input.used_points && input.used_points > 0) {
+    const { data: userPoints } = await supabaseAdmin
+      .from('user_points')
+      .select('total_points')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const totalPoints = userPoints?.total_points || 0
+    const maxUsable = Math.max(0, discountedTotal - couponDiscount)
+    appliedPoints = Math.min(input.used_points, totalPoints, maxUsable)
+  }
+
+  const finalTotal = Math.max(0, discountedTotal - couponDiscount - appliedPoints) + shipping
+
+  // 면세/과세 비율대로 쿠폰·포인트·배송비 배분 → 토스에 넘길 비과세 금액 계산
+  const taxFreeProductAmount = itemSnapshots
+    .filter((s) => s.tax_type === 'tax_free')
+    .reduce((sum, s) => sum + s.final_unit_price * s.quantity, 0)
+  const taxableProductAmount = itemSnapshots
+    .filter((s) => s.tax_type !== 'tax_free')
+    .reduce((sum, s) => sum + s.final_unit_price * s.quantity, 0)
+  const productSubtotal = taxableProductAmount + taxFreeProductAmount
+  const discountTotal = couponDiscount + appliedPoints
+
+  const allocatedTaxFreeDiscount =
+    productSubtotal === 0
+      ? 0
+      : Math.floor((taxFreeProductAmount * discountTotal) / productSubtotal)
+  const allocatedTaxableDiscount = discountTotal - allocatedTaxFreeDiscount
+  const discountedTaxFreeProduct = Math.max(
+    0,
+    taxFreeProductAmount - allocatedTaxFreeDiscount
+  )
+  const discountedTaxableProduct = Math.max(
+    0,
+    taxableProductAmount - allocatedTaxableDiscount
+  )
+
+  const allocatedTaxFreeShipping =
+    productSubtotal === 0
+      ? 0
+      : Math.floor((taxFreeProductAmount * shipping) / productSubtotal)
+  const allocatedTaxableShipping = shipping - allocatedTaxFreeShipping
+  const discountedTaxFreeAmount =
+    discountedTaxFreeProduct + allocatedTaxFreeShipping
+
+  return {
+    pricing: {
+      originalTotal,
+      discountedTotal,
+      shipping,
+      couponDiscount,
+      appliedPoints,
+      finalTotal,
+      taxFreeAmount: discountedTaxFreeAmount,
+    },
+    itemSnapshots,
+  }
+}

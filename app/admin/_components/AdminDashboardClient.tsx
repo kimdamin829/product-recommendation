@@ -1,0 +1,204 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+
+type AdminCard = {
+  title: string
+  description: string
+  href: string
+  accent: string
+  badge?: string
+}
+
+const managementCards: AdminCard[] = [
+  {
+    title: '상품 관리',
+    description: '상품 등록, 품절 전환, 태그 관리까지 한 곳에서.',
+    href: '/admin/products',
+    accent: 'bg-primary-100 text-primary-800',
+    badge: 'NEW',
+  },
+  {
+    title: '프로모션 관리',
+    description: '할인율 할인, 1+1, 2+1, 3+1 프로모션을 생성하고 관리하세요.',
+    href: '/admin/promotions',
+    accent: 'bg-fuchsia-100 text-fuchsia-700',
+  },
+  {
+    title: '주문 관리',
+    description: '주문 상태 변경, 리뷰 모니터링, 고객 응대까지 한번에.',
+    href: '/admin/orders',
+    accent: 'bg-emerald-100 text-emerald-700',
+  },
+  {
+    title: '알림',
+    description: '적립 정책, 알림 발송을 유연하게 설정합니다.',
+    href: '/admin/notifications',
+    accent: 'bg-indigo-100 text-indigo-700',
+  },
+  {
+    title: '상품고시정보',
+    description: '상품별 법정 상품 정보 제공 고시를 등록·수정합니다.',
+    href: '/admin/product-notice',
+    accent: 'bg-amber-100 text-amber-700',
+  },
+  {
+    title: '상품 상세',
+    description: '상품별 상세페이지 설명 이미지를 등록·순서 변경·삭제합니다.',
+    href: '/admin/product-description',
+    accent: 'bg-amber-100 text-amber-700',
+  },
+]
+
+const supportCards: AdminCard[] = [
+  {
+    title: '쿠폰 관리',
+    description: '카테고리/기간별 쿠폰 전략을 설계하세요.',
+    href: '/admin/coupons',
+    accent: 'bg-purple-100 text-purple-700',
+  },
+  {
+    title: '리뷰 관리',
+    description: '리뷰 모더레이션, 답변, 노출 설정을 제어합니다.',
+    href: '/admin/reviews',
+    accent: 'bg-rose-100 text-rose-700',
+  },
+  {
+    title: '포인트 관리',
+    description: '고객 지정 포인트 적립 및 관리',
+    href: '/admin/points',
+    accent: 'bg-blue-100 text-blue-700',
+  },
+]
+
+// 주문 통계를 가져오는 함수 (실제 데이터는 주문 관리 페이지에서 확인)
+const getTodayOrdersUrl = () => {
+  const today = new Date().toISOString().split('T')[0]
+  return `/admin/orders?date=${today}`
+}
+
+const getRecent7DaysOrdersUrl = () => {
+  const today = new Date()
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 7)
+  const startDate = sevenDaysAgo.toISOString().split('T')[0]
+  const endDate = today.toISOString().split('T')[0]
+  return `/admin/orders?start_date=${startDate}&end_date=${endDate}`
+}
+
+interface AdminDashboardClientProps {
+  todayOrdersCount: number
+  recent7DaysOrdersCount: number
+}
+
+export default function AdminDashboardClient({ 
+  todayOrdersCount, 
+  recent7DaysOrdersCount 
+}: AdminDashboardClientProps) {
+  const router = useRouter()
+
+  const handleNavigate = (href: string) => {
+    router.push(href)
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900">
+      <header className="bg-white border-b border-neutral-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <p className="text-sm text-neutral-500">DAEGA Admin</p>
+              <h1 className="text-3xl font-semibold tracking-tight">운영 대시보드</h1>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => handleNavigate(getTodayOrdersUrl())}
+              className="bg-neutral-900 text-white rounded-2xl p-5 space-y-2 shadow-sm hover:bg-neutral-800 transition text-left"
+            >
+              <p className="text-sm text-neutral-300">오늘 신규 주문</p>
+              <p className="text-2xl font-semibold">
+                {todayOrdersCount}건
+              </p>
+              <p className="text-xs text-neutral-400">오늘 주문 내역 보기 →</p>
+            </button>
+            <button
+              onClick={() => handleNavigate(getRecent7DaysOrdersUrl())}
+              className="bg-neutral-900 text-white rounded-2xl p-5 space-y-2 shadow-sm hover:bg-neutral-800 transition text-left"
+            >
+              <p className="text-sm text-neutral-300">최근 7일 주문</p>
+              <p className="text-2xl font-semibold">
+                {recent7DaysOrdersCount}건
+              </p>
+              <p className="text-xs text-neutral-400">최근 7일 주문 내역 보기 →</p>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">Operations</p>
+              <h2 className="text-xl font-semibold">핵심 업무</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {managementCards.map((card) => (
+              <div key={card.title} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${card.accent}`}>
+                      {card.title}
+                      {card.badge && (
+                        <span className="ml-2 bg-white/80 text-[10px] font-bold px-2 py-0.5 rounded-full text-neutral-700">
+                          {card.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-3 text-sm text-neutral-600">{card.description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleNavigate(card.href)}
+                  className="mt-2 inline-flex items-center text-sm font-semibold text-primary-800 hover:text-primary-900"
+                >
+                  바로가기 →
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">Customer & Promotion</p>
+              <h2 className="text-xl font-semibold">고객 / 혜택 / 콘텐츠</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {supportCards.map((card) => (
+              <div key={card.title} className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${card.accent}`}>
+                  {card.title}
+                </div>
+                <p className="text-sm text-neutral-600">{card.description}</p>
+                <button
+                  onClick={() => handleNavigate(card.href)}
+                  className="text-sm font-semibold text-neutral-700 hover:text-neutral-900"
+                >
+                  열기 →
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+      </main>
+    </div>
+  )
+}
+

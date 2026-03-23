@@ -1,0 +1,483 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
+import { getUserFromServer } from '@/lib/auth/auth-server'
+import { usePoints } from '@/lib/point/points'
+import crypto from 'crypto'
+import { calculateOrderPricing, OrderInput, OrderItemSnapshot, PricingResult } from '@/lib/order/order-pricing.server'
+/** draft 기준 응답: 주문은 아직 없으므로 success 페이지에서 정리 중 + 폴링 후 리다이렉트 */
+function buildPendingRedirectResponse(
+  orderId: string,
+  payload: OrderInput,
+  cartUserId: string | null
+): { redirectTo: string; orderId: string; cartRemove: Array<{ productId: string; promotionGroupId?: string | null }>; cartUserId: string | null; processingPending: true } {
+  const cartRemoveMap = new Map<string, { productId: string; promotionGroupId?: string | null }>()
+  payload.items.forEach((item) => {
+    const key = `${item.productId}::${item.promotion_group_id ?? ''}`
+    if (!cartRemoveMap.has(key)) {
+      cartRemoveMap.set(key, {
+        productId: item.productId,
+        promotionGroupId: item.promotion_group_id ?? null,
+      })
+    }
+  })
+  const cartRemove = Array.from(cartRemoveMap.values())
+  const redirectTo = `/checkout/toss/success?orderId=${encodeURIComponent(orderId)}&confirmed=1`
+  return { redirectTo, orderId, cartRemove, cartUserId, processingPending: true as const }
+}
+
+/** 리다이렉트용 응답 생성 (confirm 성공 시 클라이언트가 redirectTo만 쓰면 됨) */
+function buildRedirectResponse(
+  order: { order_number?: string | null; user_id?: string | null; gift_token?: string | null; shipping_phone?: string | null },
+  payload: OrderInput
+): { ok: true; orderNumber: string; isGuest: boolean; giftToken: string | null; redirectTo: string; cartRemove: Array<{ productId: string; promotionGroupId?: string | null }> } {
+  const orderNumber = order.order_number || ''
+  const isGuest = !order.user_id
+  const giftToken = order.gift_token ?? null
+
+  let redirectTo: string
+  if (isGuest) {
+    const phone = String(payload.shipping_phone || '').replace(/\D/g, '').slice(0, 13)
+    redirectTo = `/order-lookup?order_number=${encodeURIComponent(orderNumber)}&phone=${encodeURIComponent(phone)}&done=1`
+  } else {
+    redirectTo = '/orders'
+  }
+
+  const cartRemoveMap = new Map<string, { productId: string; promotionGroupId?: string | null }>()
+  payload.items.forEach((item) => {
+    const key = `${item.productId}::${item.promotion_group_id ?? ''}`
+    if (!cartRemoveMap.has(key)) {
+      cartRemoveMap.set(key, {
+        productId: item.productId,
+        promotionGroupId: item.promotion_group_id ?? null,
+      })
+    }
+  })
+  const cartRemove = Array.from(cartRemoveMap.values())
+
+  return { ok: true, orderNumber, isGuest, giftToken, redirectTo, cartRemove }
+}
+
+/** 이미 확정된 주문(idempotency)용 리다이렉트 응답 (order_items 기준 cartRemove) */
+function buildRedirectResponseFromOrder(
+  order: { order_number?: string | null; user_id?: string | null; gift_token?: string | null; shipping_phone?: string | null },
+  orderItems: Array<{ product_id: string }>
+): { ok: true; orderNumber: string; isGuest: boolean; giftToken: string | null; redirectTo: string; cartRemove: Array<{ productId: string; promotionGroupId?: string | null }> } {
+  const orderNumber = order.order_number || ''
+  const isGuest = !order.user_id
+  const giftToken = order.gift_token ?? null
+
+  let redirectTo: string
+  if (isGuest) {
+    const phone = String(order.shipping_phone || '').replace(/\D/g, '').slice(0, 13)
+    redirectTo = `/order-lookup?order_number=${encodeURIComponent(orderNumber)}&phone=${encodeURIComponent(phone)}&done=1`
+  } else {
+    redirectTo = '/orders'
+  }
+
+  const cartRemoveMap = new Map<string, { productId: string; promotionGroupId?: string | null }>()
+  orderItems.forEach((item) => {
+    const key = item.product_id
+    if (!cartRemoveMap.has(key)) {
+      cartRemoveMap.set(key, { productId: item.product_id, promotionGroupId: null })
+    }
+  })
+  const cartRemove = Array.from(cartRemoveMap.values())
+
+  return { ok: true, orderNumber, isGuest, giftToken, redirectTo, cartRemove }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUserFromServer()
+
+    const body = await request.json()
+    const { paymentKey, orderId, orderInput: orderInputBody, mock } = body
+    const isMock = true
+
+    // ---------- 1단계: 사전검사 (테스트 전용: 항상 모의 결제) ----------
+    if (!orderId || (!paymentKey && !isMock)) {
+      return NextResponse.json({ error: '필수 값이 누락되었습니다.' }, { status: 400 })
+    }
+
+    const supabaseAdmin = createSupabaseAdminClient()
+
+    let orderInput: OrderInput
+    let itemSnapshots: OrderItemSnapshot[]
+    let pricing: PricingResult
+    let serverTotalAmount: number
+    let serverTaxFreeAmount: number
+    let draftIdToDelete: string | null = null
+    let cartUserId: string | null = null
+
+    // orderId가 있으면 반드시 draft만 사용. 클라이언트가 뭘 보내든 금액/상품/할인은 draft 기준만 신뢰.
+    if (orderId) {
+      // 1) draft 조회
+      const { data: draft, error: draftError } = await supabaseAdmin
+        .from('order_drafts')
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle()
+
+      if (draftError || !draft) {
+        return NextResponse.json(
+          { error: '주문 정보를 찾을 수 없습니다. 결제 화면에서 다시 시도해주세요.' },
+          { status: 400 }
+        )
+      }
+
+      // 2) 만료된 draft 거부
+      if (new Date(draft.expires_at) <= new Date()) {
+        return NextResponse.json(
+          { error: '주문 유효 시간이 만료되었습니다. 결제 화면에서 다시 시도해주세요.' },
+          { status: 400 }
+        )
+      }
+
+      // 3) 이미 처리된 orderId (재호출/이탈 후 재진입) → 동일 응답으로 복구
+      const { data: existingOrder } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('toss_order_id', orderId)
+        .maybeSingle()
+
+      if (existingOrder) {
+        const { data: orderItems } = await supabaseAdmin
+          .from('order_items')
+          .select('product_id')
+          .eq('order_id', existingOrder.id)
+            const redirectPayload = buildRedirectResponseFromOrder(existingOrder, orderItems || [])
+            const res = NextResponse.json({
+              success: true,
+              order: existingOrder,
+              gift_token: existingOrder.gift_token ?? null,
+              ...redirectPayload,
+            })
+            if (redirectPayload.isGuest && existingOrder.id) {
+              const cookiePayload = {
+                orderId: existingOrder.id,
+                createdAt: new Date().toISOString(),
+              }
+              res.cookies.set('guest_order_lookup', JSON.stringify(cookiePayload), {
+                path: '/order-lookup',
+                httpOnly: true,
+                sameSite: 'lax',
+                maxAge: 60 * 30,
+              })
+            }
+            return res
+      }
+
+      // 4) draft의 amount·payload만 사용 (클라이언트 orderInput 무시)
+      const pl = draft.payload as {
+        orderInput: OrderInput
+        itemSnapshots: OrderItemSnapshot[]
+        pricing: { finalTotal: number; taxFreeAmount: number; appliedPoints: number; couponDiscount: number }
+      }
+      orderInput = {
+        ...pl.orderInput,
+        is_gift: false,
+        gift_message: null,
+        gift_recipient_phone: undefined,
+        gift_recipient_name: undefined,
+        orderer_phone: undefined,
+        gift_sender_name: undefined,
+      }
+      itemSnapshots = pl.itemSnapshots
+      serverTotalAmount = draft.amount
+      serverTaxFreeAmount = draft.tax_free_amount ?? 0
+      draftIdToDelete = draft.id
+      cartUserId = draft.user_id ?? null
+      pricing = {
+        originalTotal: 0,
+        discountedTotal: pl.pricing.finalTotal,
+        shipping: 0,
+        couponDiscount: pl.pricing.couponDiscount,
+        appliedPoints: pl.pricing.appliedPoints,
+        finalTotal: pl.pricing.finalTotal,
+        taxFreeAmount: pl.pricing.taxFreeAmount,
+      }
+    } else if (orderInputBody) {
+      // 레거시: orderId 없이 orderInput만 전달 (draft 미사용 구간)
+      const result = await calculateOrderPricing({
+        supabaseAdmin,
+        userId: user?.id ?? null,
+        input: orderInputBody as OrderInput,
+      })
+      orderInput = orderInputBody as OrderInput
+      itemSnapshots = result.itemSnapshots
+      pricing = result.pricing
+      serverTotalAmount = result.pricing.finalTotal
+      serverTaxFreeAmount = result.pricing.taxFreeAmount ?? 0
+    } else {
+      return NextResponse.json({ error: '필수 값이 누락되었습니다.' }, { status: 400 })
+    }
+
+    // 토스 승인 성공 직후 · 주문 생성 전: draft에 승인 결과 저장 (복구용. 실패 시 approved_not_persisted로 남음)
+    if (draftIdToDelete && orderId) {
+      const approvedAt = new Date().toISOString()
+      await supabaseAdmin
+        .from('order_drafts')
+        .update({
+          toss_payment_key: paymentKey || null,
+          toss_approved_at: approvedAt,
+          confirm_status: 'approved_not_persisted',
+        })
+        .eq('id', draftIdToDelete)
+      // draft 경로: 후처리는 worker가 담당. 즉시 성공 응답 + worker 트리거( fire-and-forget )
+      const pendingPayload = buildPendingRedirectResponse(orderId, orderInput, cartUserId)
+      const origin =
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+        new URL(request.url).origin
+      fetch(`${origin}/api/payments/toss/process-draft`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.CRON_SECRET && { Authorization: `Bearer ${process.env.CRON_SECRET}` }),
+        },
+        body: JSON.stringify({ orderId: draftIdToDelete }),
+      }).catch((e) => console.warn('[toss/confirm] process-draft 트리거 실패:', e))
+      return NextResponse.json({
+        success: true,
+        ...pendingPayload,
+      })
+    }
+
+    // ---------- 3단계: 레거시 경로(orderId 없이 orderInput만 전달) — 내부 확정 트랜잭션 ----------
+    // 실패 시 draft는 삭제하지 않음(재시도 가능). 토스는 이미 승인된 상태일 수 있으므로 안내 메시지 반환.
+    try {
+    const today = new Date()
+    const datePrefix = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
+    const sanitizedOrderId = String(orderId).replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+    const idempotencySuffix = sanitizedOrderId.slice(0, 4)
+    const idempotentOrderNumber = idempotencySuffix ? `${datePrefix}-${idempotencySuffix}` : null
+
+    if (idempotentOrderNumber) {
+      let existingQuery = supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('order_number', idempotentOrderNumber)
+      if (user) {
+        existingQuery = existingQuery.eq('user_id', user.id)
+      } else {
+        existingQuery = existingQuery.is('user_id', null)
+      }
+      const { data: existingOrder } = await existingQuery.maybeSingle()
+      if (existingOrder) {
+        const giftToken = existingOrder.gift_token ?? null
+        const payloadLegacy = orderInput
+        const redirectPayload = buildRedirectResponse(existingOrder, payloadLegacy)
+        const res = NextResponse.json({
+          success: true,
+          order: existingOrder,
+          gift_token: giftToken,
+          ...redirectPayload,
+        })
+        if (redirectPayload.isGuest && existingOrder.id) {
+          const cookiePayload = {
+            orderId: existingOrder.id,
+            createdAt: new Date().toISOString(),
+          }
+          res.cookies.set('guest_order_lookup', JSON.stringify(cookiePayload), {
+            path: '/api/orders/lookup',
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: 60 * 30,
+          })
+        }
+        return res
+      }
+    }
+
+    let orderNumber = idempotentOrderNumber ?? ''
+    if (!orderNumber) {
+      for (let i = 0; i < 5; i += 1) {
+        const suffix = crypto.randomBytes(2).toString('hex').toUpperCase().slice(0, 4)
+        const candidate = `${datePrefix}-${suffix}`
+        const { data: exists } = await supabaseAdmin
+          .from('orders')
+          .select('id')
+          .eq('order_number', candidate)
+          .maybeSingle()
+        if (!exists) {
+          orderNumber = candidate
+          break
+        }
+      }
+    }
+    if (!orderNumber) {
+      return NextResponse.json({ error: '주문번호 생성에 실패했습니다.' }, { status: 500 })
+    }
+
+    const payload: OrderInput = orderInput
+    const normalizedPhone = String(payload.shipping_phone || '').replace(/\D/g, '').slice(0, 13)
+
+    const orderInsertData: Record<string, unknown> = {
+      user_id: user?.id ?? null,
+      order_number: orderNumber,
+      total_amount: serverTotalAmount,
+      tax_free_amount: serverTaxFreeAmount,
+      points_used: pricing.appliedPoints ?? 0,
+      coupon_discount_amount: pricing.couponDiscount ?? 0,
+      status: 'ORDER_RECEIVED',
+      delivery_type: payload.delivery_type,
+      delivery_time: payload.delivery_time,
+      shipping_address: payload.shipping_address,
+      shipping_name: payload.shipping_name,
+      shipping_phone: normalizedPhone,
+      delivery_note: payload.delivery_note,
+      is_gift: false,
+      gift_message: null,
+      payment_method: payload.payment_method || 'test_checkout',
+      toss_order_id: orderId,
+      toss_payment_key: paymentKey || null,
+    }
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert(orderInsertData)
+      .select()
+      .single()
+
+    if (orderError || !order) {
+      return NextResponse.json({ error: '주문 생성 실패' }, { status: 500 })
+    }
+
+    const orderItems = itemSnapshots.map((item) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.final_unit_price ?? item.price,
+    }))
+
+    if (orderItems.length > 0) {
+      const { error: itemsError } = await supabaseAdmin
+        .from('order_items')
+        .insert(orderItems)
+
+      if (itemsError) {
+        return NextResponse.json({ error: '주문 상품 저장 실패' }, { status: 500 })
+      }
+    }
+
+    // 1) 핵심 정합성: 포인트·쿠폰은 주문과 강하게 결합 → 순차 처리, 실패 시 일관성 유지
+    if (user && pricing.appliedPoints > 0) {
+      const pointsOk = await usePoints(
+        user.id,
+        pricing.appliedPoints,
+        order.id,
+        `주문 #${orderNumber} 포인트 사용`,
+        supabaseAdmin
+      )
+      if (!pointsOk) {
+        console.error('[toss/confirm] 포인트 사용 처리 실패')
+        return NextResponse.json({ error: '포인트 사용 처리에 실패했습니다.' }, { status: 500 })
+      }
+    }
+    if (user && payload.used_coupon_id && pricing.couponDiscount > 0) {
+      const { error: couponError } = await supabaseAdmin
+        .from('user_coupons')
+        .update({
+          is_used: true,
+          used_at: new Date().toISOString(),
+          order_id: order.id,
+        })
+        .eq('id', payload.used_coupon_id)
+        .eq('user_id', user.id)
+      if (couponError) {
+        console.error('[toss/confirm] 쿠폰 사용 처리 실패:', couponError)
+        return NextResponse.json({ error: '쿠폰 사용 처리에 실패했습니다.' }, { status: 500 })
+      }
+    }
+
+    // 2) 장바구니 삭제: draft.user_id 사용 (리다이렉트 후 쿠키 없어도 동작)
+    const uid = cartUserId || user?.id
+    if (uid) {
+      const seen = new Map<string, { productId: string; promotionGroupId?: string | null }>()
+      payload.items.forEach((item) => {
+        const key = `${item.productId}::${item.promotion_group_id ?? ''}`
+        if (!seen.has(key)) {
+          seen.set(key, {
+            productId: item.productId,
+            promotionGroupId: item.promotion_group_id ?? null,
+          })
+        }
+      })
+      const pairs = Array.from(seen.values())
+      for (let i = 0; i < pairs.length; i += 1) {
+        const p = pairs[i]
+        let query = supabaseAdmin
+          .from('carts')
+          .delete()
+          .eq('user_id', uid)
+          .eq('product_id', p.productId)
+        if (p.promotionGroupId != null && p.promotionGroupId !== '') {
+          query = query.eq('promotion_group_id', p.promotionGroupId)
+        } else {
+          query = query.is('promotion_group_id', null)
+        }
+        const { error: e } = await query
+        if (e) console.error('[toss/confirm] 장바구니 정리 실패:', p, e)
+      }
+    }
+
+    if (draftIdToDelete) {
+      await supabaseAdmin.from('order_drafts').delete().eq('id', draftIdToDelete)
+    }
+
+    // ---------- 4단계: 비핵심 후처리 (인앱 알림, 응답) ----------
+    if (user) {
+      try {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: user.id,
+          title: '주문이 완료되었습니다.',
+          content: `주문번호 ${orderNumber}의 결제가 완료되었습니다.`,
+          type: 'general',
+          is_read: false,
+          order_id: order.id,
+        })
+      } catch (e) {
+        console.error('[toss/confirm] 알림 생성 실패:', e)
+      }
+    }
+
+    const redirectPayload = buildRedirectResponse(order, payload)
+    const res = NextResponse.json({
+      success: true,
+      order,
+      gift_token: order.gift_token ?? null,
+      ...redirectPayload,
+      cartUserId: order?.user_id ?? uid ?? null,
+    })
+    if (redirectPayload.isGuest && order?.id) {
+      const cookiePayload = {
+        orderId: order.id,
+        createdAt: new Date().toISOString(),
+      }
+      res.cookies.set('guest_order_lookup', JSON.stringify(cookiePayload), {
+        path: '/api/orders/lookup',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 30,
+      })
+    }
+    return res
+    } catch (phase3Error: unknown) {
+      // 토스 승인 성공 후 주문/포인트/쿠폰/장바구니 등 DB 오류. draft는 삭제하지 않음(재시도 시 idempotency로 처리 가능)
+      console.error('[toss/confirm] 주문 저장 중 오류:', phase3Error)
+      return NextResponse.json(
+        {
+          error:
+            '주문 저장 중 오류가 발생했습니다. 결제는 완료되었을 수 있습니다. 잠시 후 다시 시도하거나 고객센터로 문의해 주세요.',
+        },
+        { status: 500 }
+      )
+    }
+  } catch (error: unknown) {
+    console.error('결제 승인 처리 오류:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '서버 오류' },
+      { status: 500 }
+    )
+  }
+}
