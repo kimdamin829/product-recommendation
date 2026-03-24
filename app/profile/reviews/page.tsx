@@ -258,7 +258,7 @@ export default function ProfileReviewsPage() {
                   }`}
                 >
                   작성 가능한 리뷰
-                  {reviewableCount > 0 && <span className="ml-1 text-red-500">({reviewableCount})</span>}
+                  {reviewableCount > 0 && <span className="ml-1 text-green-1000">({reviewableCount})</span>}
                 </button>
                 <button
                   onClick={() => setActiveTab('written')}
@@ -314,7 +314,7 @@ export default function ProfileReviewsPage() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWriteReview(product) }}
-                        className="px-3 py-1.5 bg-white text-red-600 border border-red-600 rounded text-sm font-medium hover:bg-blue-50 transition whitespace-nowrap flex-shrink-0 self-start"
+                        className="px-3 py-1.5 bg-white text-green-800 border border-green-800 rounded text-sm font-medium hover:bg-blue-50 transition whitespace-nowrap flex-shrink-0 self-start"
                       >
                         리뷰 작성
                       </button>
@@ -389,7 +389,7 @@ export default function ProfileReviewsPage() {
               }`}
             >
               작성 가능한 리뷰
-              {reviewableCount > 0 && <span className="ml-1 text-red-500">({reviewableCount})</span>}
+              {reviewableCount > 0 && <span className="ml-1 text-green-1000">({reviewableCount})</span>}
             </button>
             <button
               onClick={() => setActiveTab('written')}
@@ -439,7 +439,7 @@ export default function ProfileReviewsPage() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWriteReview(product) }}
-                        className="px-3 py-1.5 bg-white text-red-600 border border-red-600 rounded text-sm font-medium hover:bg-blue-50 transition whitespace-nowrap flex-shrink-0 self-start"
+                        className="px-3 py-1.5 bg-white text-green-800 border border-green-800 rounded text-sm font-medium hover:bg-blue-50 transition whitespace-nowrap flex-shrink-0 self-start"
                       >
                         리뷰 작성
                       </button>

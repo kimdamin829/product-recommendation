@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
 import { requireActiveUserFromServer } from '@/lib/auth/auth-server'
 import { Coupon, UserCoupon } from '@/lib/supabase/supabase'
 
@@ -46,7 +46,7 @@ function isCouponValid(userCoupon: UserCoupon, coupon: Coupon): boolean {
 // GET: 마이페이지 전체 정보 조회 (이름, 주문 개수, 쿠폰 개수, 포인트)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = createSupabaseAdminClient()
     
     // 서버에서 사용자 인증 확인 (헬퍼 함수 사용)
     const authResult = await requireActiveUserFromServer()
@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
         .eq('id', user.id)
         .single(),
       
-      // 주문 개수 조회 (head: true로 count만 가져오기 - 성능 최적화)
+      // 주문 개수 조회 (demo 환경)
       supabase
-        .from('orders')
-        .select('id', { count: 'exact', head: true })
+        .from('demo_orders')
+        .select('order_id', { count: 'exact', head: true })
         .eq('user_id', user.id),
       
       // 쿠폰 조회 (유효기간 판단에 필요한 필드만: user_coupons.id, expires_at, created_at + coupon.validity_days)

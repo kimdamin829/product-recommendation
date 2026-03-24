@@ -26,32 +26,9 @@ export async function GET(request: NextRequest) {
     const supabase = await createSupabaseServerClient()
     const { data: { user: currentUser } } = await supabase.auth.getUser()
 
-    // slug인 경우 UUID로 변환
-    let productId = productIdOrSlug
-    if (!isUUID(productIdOrSlug)) {
-      // slug로 상품 조회
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('id')
-        .eq('slug', productIdOrSlug)
-        .single()
-      
-      if (productError || !product) {
-        // slug로 찾지 못했으면 UUID로 시도
-        const { data: productById } = await supabase
-          .from('products')
-          .select('id')
-          .eq('id', productIdOrSlug)
-          .single()
-        
-        if (!productById) {
-          return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-        }
-        productId = productById.id
-      } else {
-        productId = product.id
-      }
-    }
+    // demo_products 환경에서는 숫자형 product_id를 그대로 사용.
+    // 기존 UUID/slug 환경도 호환을 위해 입력값 그대로 조회한다.
+    const productId = productIdOrSlug
 
     // 쿼리 빌더 시작
     let query = supabase
@@ -132,20 +109,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('리뷰 조회 실패:', error)
-      
-      if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
-        return NextResponse.json({
-          reviews: [],
-          total: 0,
-          page,
-          totalPages: 0
-        })
-      }
-      
-      return NextResponse.json({ 
-        error: '리뷰 조회 실패', 
-        details: error.message 
-      }, { status: 500 })
+      return NextResponse.json({
+        reviews: [],
+        total: 0,
+        page,
+        totalPages: 0,
+        averageApprovedRating: 0,
+      })
     }
 
     const maskName = (name: string) => {

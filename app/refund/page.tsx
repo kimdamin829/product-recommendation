@@ -131,8 +131,8 @@ export default function RefundPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">5. 배송비 부담</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h3 className="font-semibold text-green-800 mb-2">회사 책임</h3>
+              <div className="bg-green-100 p-4 rounded-lg border border-green-300">
+                <h3 className="font-semibold text-green-900 mb-2">회사 책임</h3>
                 <p className="text-sm text-gray-700 mb-2">다음의 경우 회사가 배송비를 부담합니다:</p>
                 <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                   <li>상품 파손/오배송</li>
@@ -141,8 +141,8 @@ export default function RefundPage() {
                 </ul>
               </div>
               
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <h3 className="font-semibold text-red-800 mb-2">고객 책임</h3>
+              <div className="bg-green-100 p-4 rounded-lg border border-green-300">
+                <h3 className="font-semibold text-green-900 mb-2">고객 책임</h3>
                 <p className="text-sm text-gray-700 mb-2">다음의 경우 고객이 배송비를 부담합니다:</p>
                 <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                   <li>단순 변심</li>

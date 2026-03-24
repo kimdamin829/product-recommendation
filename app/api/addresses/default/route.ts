@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
 import { requireActiveUserFromServer } from '@/lib/auth/auth-server'
 
 export const dynamic = 'force-dynamic'
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // GET: 기본 주소 조회
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = createSupabaseAdminClient()
     
     // 서버에서 사용자 인증 확인
     const authResult = await requireActiveUserFromServer()
@@ -27,6 +27,12 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error && error.code !== 'PGRST116') {
+      if (error.code === '42P01') {
+        return NextResponse.json({
+          address: null,
+          hasDefaultAddress: false,
+        })
+      }
       console.error('기본 주소 조회 실패:', error)
       return NextResponse.json({ error: '기본 주소 조회 실패' }, { status: 500 })
     }

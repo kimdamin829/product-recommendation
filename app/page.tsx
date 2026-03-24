@@ -6,6 +6,7 @@ import PromotionModalWrapper from '@/components/common/PromotionModalWrapper'
 import CategoryGrid from '@/components/sections/CategoryGrid'
 import ProductCard from '@/components/product/ProductCard'
 import { getServerBaseUrl } from '@/lib/utils/server-url'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,11 +46,24 @@ export default async function Home() {
       <Header />
       
       <main className="flex-1">
-        <section className="pt-1 pb-1 bg-gray-100">
+        <section className="p-0">
+          <div className="relative w-full overflow-hidden bg-gray-200 aspect-[1500/1100]">
+            <Image
+              src="/images/hero/hero-1.jpg"
+              alt="메인 히어로 배너"
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 480px) 100vw, 480px"
+            />
+          </div>
+        </section>
+
+        <section className="pt-0 pb-0 bg-gray-100">
           <CategoryGrid selectedCategory="" />
         </section>
 
-        <section className="px-4 py-4 pb-24">
+        <section className="px-4 py-3 pb-24">
           <h2 className="text-lg font-bold text-gray-900 mb-3">전체 상품</h2>
           {products.length === 0 ? (
             <div className="text-sm text-gray-500">등록된 상품이 없습니다.</div>

@@ -265,7 +265,7 @@ function TossSuccessContent() {
       )}
       {status === 'error' && (
         <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center">
-          <p className="text-sm text-red-600">{message || '결제 승인에 실패했습니다.'}</p>
+          <p className="text-sm text-green-800">{message || '결제 승인에 실패했습니다.'}</p>
           <p className="text-xs text-gray-500 mt-2">
             주문/결제 내역은 주문조회 또는 마이페이지에서 확인할 수 있습니다.
           </p>

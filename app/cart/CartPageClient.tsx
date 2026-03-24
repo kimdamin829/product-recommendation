@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -9,20 +10,20 @@ import Footer from '@/components/layout/Footer'
 import BottomNavbar from '@/components/layout/BottomNavbar'
 import FreeShippingProgress from '@/components/common/FreeShippingProgress'
 import PromotionModalWrapper from '@/components/common/PromotionModalWrapper'
+import ProductCard from '@/components/product/ProductCard'
 import { isSoldOut } from '@/lib/product/product-utils'
 import { useCart } from '@/lib/cart'
-import { formatPhoneNumber } from '@/lib/utils/format-phone'
+import { Product } from '@/lib/supabase/supabase'
 import CartHeader from './_components/CartHeader'
 import DeliveryMethodSelector from './_components/DeliveryMethodSelector'
 import CartItemList from './_components/CartItemList'
 import OrderSummary from './_components/OrderSummary'
-import AddressModal from './_components/AddressModal'
 import LoginPromptModal from './_components/LoginPromptModal'
-import { useOrderPricing } from '@/lib/cart/useOrderPricing'
 
 function CartPageContent() {
   const router = useRouter()
   const pathname = usePathname()
+  const [nextPurchaseProducts, setNextPurchaseProducts] = useState<Product[]>([])
   
   const {
     mounted,
@@ -32,16 +33,10 @@ function CartPageContent() {
     allSelected,
     groupedItems,
     showLoginPrompt,
-    showAddressModal,
-    selectedAddressId,
     deliveryMethod,
     pickupTime,
     quickDeliveryArea,
     quickDeliveryTime,
-    defaultAddress,
-    loadingAddress,
-    allAddresses,
-    loadingAddresses,
     getTotalPrice,
     getSelectedItems,
     toggleSelect,
@@ -52,29 +47,34 @@ function CartPageContent() {
     setQuickDeliveryArea,
     setQuickDeliveryTime,
     setShowLoginPrompt,
-    setShowAddressModal,
-    setSelectedAddressId,
     closeLoginPrompt,
-    handleSelectAddress,
-    confirmAddressSelection,
     handleCheckout,
     handleGuestCheckout,
-    openAddressModal,
     removeCartItemWithDB,
     updateCartQuantityWithDB,
   } = useCart()
 
-  const selectedItems = getSelectedItems()
-  const { pricing: serverPricing, loading: pricingLoading } = useOrderPricing(
-    selectedItems.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      promotion_group_id: item.promotion_group_id ?? null,
-    })),
-    deliveryMethod,
-    pickupTime,
-    quickDeliveryTime
-  )
+  useEffect(() => {
+    if (!user?.id) {
+      setNextPurchaseProducts([])
+      return
+    }
+    let active = true
+    const run = async () => {
+      try {
+        const res = await fetch('/api/recommendations/next-purchase', { cache: 'no-store' })
+        const data = await res.json().catch(() => ({ products: [] }))
+        if (!active) return
+        setNextPurchaseProducts(Array.isArray(data?.products) ? data.products : [])
+      } catch {
+        if (active) setNextPurchaseProducts([])
+      }
+    }
+    run()
+    return () => {
+      active = false
+    }
+  }, [user?.id])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -89,55 +89,12 @@ function CartPageContent() {
 
       <main className="flex-1 container mx-auto max-w-4xl px-2 pt-2 lg:pt-6 pb-10 md:pb-32 lg:pb-40">
         <h2 className="hidden lg:block text-3xl font-bold text-center mb-8 text-primary-900 lg:mt-10">장바구니</h2>
-        {/* 배송지 정보 */}
-        {!loadingAddress && user && items.length > 0 && (
-          <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            {defaultAddress ? (
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base font-bold text-gray-900">
-                      {defaultAddress.address.split('(')[0].trim()}
-                    </span>
-                    {defaultAddress.is_default && (
-                      <span className="text-xs bg-primary-100 text-primary-800 px-2 py-0.5 rounded">기본</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    {defaultAddress.address}
-                    {defaultAddress.address_detail && ` ${defaultAddress.address_detail}`}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-gray-900">
-                    {defaultAddress.recipient_name} | {formatPhoneNumber(defaultAddress.recipient_phone)}
-                  </p>
-                </div>
-                <button
-                  onClick={openAddressModal}
-                  className="ml-4 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-600 rounded-md hover:bg-blue-50 transition whitespace-nowrap"
-                >
-                  배송지 변경
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">등록된 배송지가 없습니다</p>
-                <button
-                  onClick={() => router.push('/profile/addresses')}
-                  className="px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-600 rounded-md hover:bg-blue-50 transition"
-                >
-                  배송지 등록
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         {items.length === 0 ? (
           <div className="text-center py-32 md:py-40">
             <p className="text-xl text-gray-600 mb-6">장바구니가 비어있습니다.</p>
             <button
               onClick={() => router.push('/products')}
-              className="bg-white text-red-600 border border-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+              className="bg-white text-green-800 border border-green-800 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
             >
               쇼핑 계속하기
             </button>
@@ -165,8 +122,8 @@ function CartPageContent() {
                       type="checkbox"
                       checked={allSelected}
                       onChange={(e) => toggleSelectAll(e.target.checked)}
-                      className="w-5 h-5 border-gray-300 focus:ring-red-600 accent-red-600"
-                      style={{ accentColor: '#dc2626' }}
+                      className="w-5 h-5 border-gray-300 focus:ring-green-800 accent-green-800"
+                      style={{ accentColor: '#16a34a' }}
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900">전체선택</span>
                   </label>
@@ -177,7 +134,7 @@ function CartPageContent() {
               {deliveryMethod === 'regular' && (
                 <div className="py-3 pb-4 border-b border-gray-300">
                   <FreeShippingProgress
-                    totalPrice={serverPricing?.discountedTotal ?? getTotalPrice()}
+                    totalPrice={getTotalPrice()}
                     deliveryMethod={deliveryMethod}
                   />
                 </div>
@@ -195,19 +152,33 @@ function CartPageContent() {
 
             {/* 주문 요약 */}
             <div className="lg:col-span-2">
-              <OrderSummary
-                selectedItems={getSelectedItems()}
-                deliveryMethod={deliveryMethod}
-                pickupTime={pickupTime}
-                quickDeliveryArea={quickDeliveryArea}
-                quickDeliveryTime={quickDeliveryTime}
-                serverPricing={serverPricing}
-                pricingLoading={pricingLoading}
-              />
+              {nextPurchaseProducts.length > 0 && (
+                <section className="mb-3">
+                  <h3 className="text-base font-bold text-gray-900 mb-3 pl-1">고객님이 좋아할 상품이에요</h3>
+                  <div className="overflow-x-auto pb-1">
+                    <div className="flex min-w-max gap-3 pl-1 pr-1">
+                      {nextPurchaseProducts.map((item) => (
+                        <div key={`next-purchase-${item.id}`} className="w-36 shrink-0">
+                          <ProductCard product={item} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+              <div className="mt-6">
+                <OrderSummary
+                  selectedItems={getSelectedItems()}
+                  deliveryMethod={deliveryMethod}
+                  pickupTime={pickupTime}
+                  quickDeliveryArea={quickDeliveryArea}
+                  quickDeliveryTime={quickDeliveryTime}
+                />
+              </div>
               <div className="hidden lg:flex mt-2">
                 <button
                   onClick={handleCheckout}
-                  className="shrink-0 bg-red-600 text-white py-3 text-base font-medium hover:bg-red-600 border-0 flex-1 min-w-0"
+                  className="shrink-0 bg-green-800 text-white py-3 text-base font-medium hover:bg-green-800 border-0 flex-1 min-w-0"
                   suppressHydrationWarning
                 >
                   주문하기 ({mounted ? getSelectedItems().filter(item => !isSoldOut(item.status)).reduce((total, item) => total + item.quantity, 0) : 0})
@@ -224,7 +195,7 @@ function CartPageContent() {
           <div className="w-full max-w-[480px] bg-white shadow-lg flex">
             <button
               onClick={handleCheckout}
-              className="shrink-0 bg-red-600 text-white py-3 text-base font-medium hover:bg-red-600 border-0 flex-1 min-w-0"
+              className="shrink-0 bg-green-800 text-white py-3 text-base font-medium hover:bg-green-800 border-0 flex-1 min-w-0"
               suppressHydrationWarning
             >
               주문하기 ({mounted ? getSelectedItems().filter(item => !isSoldOut(item.status)).reduce((total, item) => total + item.quantity, 0) : 0})
@@ -234,19 +205,6 @@ function CartPageContent() {
       </div>
 
       <PromotionModalWrapper />
-
-      <AddressModal
-        show={showAddressModal}
-        onClose={() => {
-          setShowAddressModal(false)
-          setSelectedAddressId(null)
-        }}
-        addresses={allAddresses}
-        selectedAddressId={selectedAddressId}
-        onSelectAddress={handleSelectAddress}
-        onConfirm={confirmAddressSelection}
-        loading={loadingAddresses}
-      />
 
       <LoginPromptModal
         show={showLoginPrompt}

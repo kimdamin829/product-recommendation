@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
-import { PRODUCT_SELECT_FIELDS, enrichProductsServer } from '@/lib/product/product.service'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
+import { DEPARTMENT_ID_TO_CATEGORY } from '@/lib/utils/constants'
 
 // 동적 라우트로 설정 (searchParams 사용)
 export const dynamic = 'force-dynamic'
@@ -11,121 +11,62 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')))
-    const sort = searchParams.get('sort') || 'default'
     const category = searchParams.get('category')
-    const filter = searchParams.get('filter') // best, sale
     const searchQuery = searchParams.get('search')
     
     const from = (page - 1) * limit
-    const to = from + limit - 1
 
-    const supabase = await createSupabaseServerClient()
-
-    // filter=promotion일 때는 활성화된 프로모션의 상품만 조회
-    let promotionProductIds: string[] = []
-    if (filter === 'promotion') {
-      // 활성화된 프로모션 ID 조회
-      const { data: activePromotions, error: promoError } = await supabase
-        .from('promotions')
-        .select('id')
-        .eq('is_active', true)
-      
-      if (promoError) {
-        console.error('프로모션 조회 실패:', promoError)
-      } else if (activePromotions && activePromotions.length > 0) {
-        const promotionIds = activePromotions.map((p: any) => p.id)
-        
-        // 활성화된 프로모션에 연결된 상품 ID 조회
-        const { data: promotionProducts, error: ppError } = await supabase
-          .from('promotion_products')
-          .select('product_id')
-          .in('promotion_id', promotionIds)
-        
-        if (ppError) {
-          console.error('프로모션 상품 조회 실패:', ppError)
-        } else {
-          promotionProductIds = Array.from(new Set(promotionProducts?.map((pp: any) => pp.product_id) || []))
-        }
-      }
-    }
-
-    // 상품 조회 쿼리 구성 (프로모션 정보 포함)
-    const selectFields = PRODUCT_SELECT_FIELDS
-    
+    const supabase = createSupabaseAdminClient()
     let query = supabase
-      .from('products')
-      .select(selectFields, { count: 'exact' })
-      .neq('status', 'deleted') // deleted 상태 제외
-      
-    // filter=promotion일 때는 promotion_products에 있는 상품만 필터링
-    if (filter === 'promotion') {
-      if (promotionProductIds.length > 0) {
-        query = query.in('id', promotionProductIds)
-      } else {
-        // 프로모션 상품이 없으면 빈 결과 반환
-        query = query.eq('id', '00000000-0000-0000-0000-000000000000')
-      }
-    }
-    
-    query = query.range(from, to)
+      .from('demo_products')
+      .select('product_id, product_name, department_id', { count: 'exact' })
+      .order('product_id', { ascending: true })
 
-    // 검색어 필터
     if (searchQuery) {
-      query = query.or(
-        `name.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`
-      )
-    } else if (filter) {
-      // 필터 적용 (flash-sale 제거됨 - 타임딜 미사용)
-      if (filter === 'flash-sale') {
-        query = query.eq('id', '00000000-0000-0000-0000-000000000000')
-      }
-      // filter=promotion일 때는 inner join으로 이미 필터링됨
-    } else if (category && category !== '전체') {
-      // 카테고리 필터
-      query = query.eq('category', category)
+      query = query.ilike('product_name', `%${searchQuery}%`)
     }
 
-    // 정렬 적용
-    if (sort === 'price_asc') {
-      query = query.order('price', { ascending: true })
-    } else if (sort === 'price_desc') {
-      query = query.order('price', { ascending: false })
-    } else {
-      query = query.order('created_at', { ascending: false })
+    if (category) {
+      const departmentId = Object.entries(DEPARTMENT_ID_TO_CATEGORY).find(([, label]) => label === category)?.[0]
+      if (departmentId) {
+        query = query.eq('department_id', Number(departmentId))
+      } else {
+        // 정의되지 않은 카테고리가 오면 빈 결과 반환
+        query = query.eq('department_id', -1)
+      }
     }
+
+    query = query.range(from, from + limit - 1)
 
     const { data: products, error, count } = await query
 
     if (error) {
       console.error('[API/products] 상품 조회 실패:', error)
-      console.error('[API/products] 에러 코드:', error.code)
-      console.error('[API/products] 에러 메시지:', error.message)
-      console.error('[API/products] 에러 상세:', error.details)
-      console.error('[API/products] 쿼리 파라미터:', { page, limit, sort, category, filter, searchQuery })
-      return NextResponse.json({ 
-        error: error.message || '상품 조회 실패',
-        code: error.code 
-      }, { status: 500 })
+      return NextResponse.json({ error: error.message || '상품 조회 실패' }, { status: 500 })
     }
 
-    if (!products || products.length === 0) {
-      return NextResponse.json({
-        products: [],
-        total: count || 0,
-        page,
-        totalPages: 0,
-      })
-    }
-
-    // 공통 유틸리티 함수로 상품 데이터 보강
-    const enrichedProducts = await enrichProductsServer(products, {
-      filter: filter || undefined
-    })
+    const mappedProducts = (products || []).map((p: any) => ({
+      id: String(p.product_id),
+      slug: null,
+      brand: null,
+      name: p.product_name,
+      price: 0,
+      image_url: null,
+      category: DEPARTMENT_ID_TO_CATEGORY[p.department_id as number] || 'other',
+      average_rating: null,
+      review_count: 0,
+      weight_gram: null,
+      status: 'active',
+      tax_type: 'taxable',
+      created_at: null,
+      updated_at: null,
+      promotion: null,
+    }))
 
     const totalPages = Math.ceil((count || 0) / limit)
 
     const response = NextResponse.json({
-      products: enrichedProducts,
+      products: mappedProducts,
       total: count || 0,
       page,
       totalPages,

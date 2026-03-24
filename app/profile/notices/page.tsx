@@ -55,7 +55,7 @@ export default function ProfileNoticesPage() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {notice.isImportant && (
-                          <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded">
+                          <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-1 rounded">
                             중요
                           </span>
                         )}
@@ -117,7 +117,7 @@ export default function ProfileNoticesPage() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {notice.isImportant && (
-                          <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded">
+                          <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-1 rounded">
                             중요
                           </span>
                         )}

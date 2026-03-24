@@ -6,19 +6,41 @@
 
 export const CATEGORIES = [
   '전체',
-  '한우',
-  '한돈',
-  '수입육',
-  '닭·오리',
-  '양념육',
-  '가공육',
-  '바베큐',
-  '과일·야채',
-  '선물세트',
+  '냉동식품',
+  '베이커리',
+  '야채/과일',
+  '음료',
+  '파스타',
+  '육류/해산',
+  '양념/소스',
+  '아침식사',
+  '통조림',
+  '우유/달걀',
+  '가정용품',
+  '유아용품',
+  '간식',
+  '즉석식품',
 ] as const
 
+export const DEPARTMENT_ID_TO_CATEGORY: Record<number, string> = {
+  1: '냉동식품',
+  3: '베이커리',
+  4: '야채/과일',
+  7: '음료',
+  9: '파스타',
+  12: '육류/해산',
+  13: '양념/소스',
+  14: '아침식사',
+  15: '통조림',
+  16: '우유/달걀',
+  17: '가정용품',
+  18: '유아용품',
+  19: '간식',
+  20: '즉석식품',
+}
+
 // 관리자용 (전체 제외) - 동적으로 생성
-export const ADMIN_CATEGORIES = CATEGORIES.filter(cat => cat !== '전체') as readonly string[]
+export const ADMIN_CATEGORIES = CATEGORIES
 
 // ==================== Menu ====================
 
@@ -33,30 +55,7 @@ export const MAIN_MENU_LINKS = [
 // 실제 링크는 getCategoryPath() 함수를 사용하는 것을 권장합니다.
 export const CATEGORY_LINKS = CATEGORIES.map(category => ({
   name: category,
-  href:
-    category === '전체'
-      ? '/products'
-      : `/category/${
-          category === '한우'
-            ? 'hanwoo'
-            : category === '한돈'
-            ? 'handon'
-            : category === '수입육'
-            ? 'imported'
-            : category === '닭·오리'
-            ? 'chicken'
-            : category === '양념육'
-            ? 'seasoned'
-            : category === '가공육'
-            ? 'processed'
-            : category === '바베큐'
-            ? 'bbq'
-            : category === '과일·야채'
-            ? 'produce'
-            : category === '선물세트'
-            ? 'gift-set'
-            : category
-        }`,
+  href: `/products?category=${encodeURIComponent(category)}`,
 }))
 
 // ==================== Order Status ====================

@@ -8,7 +8,6 @@ import StarIcons from './StarIcons'
 import ReviewWriteModal from './ReviewWriteModal'
 import ReviewItemSkeleton from '../skeletons/ReviewItemSkeleton'
 import { useAuth } from '@/lib/auth/auth-context'
-import { supabase } from '@/lib/supabase/supabase'
 import toast from 'react-hot-toast'
 import { Review, ReviewListProps } from '@/lib/types/review'
 import { showError, showSuccess } from '@/lib/utils/error-handler'
@@ -129,24 +128,9 @@ export default function ReviewList({ productId, onWriteReview, limit = 10, showV
 
   useEffect(() => {
     const fetchProductData = async () => {
-      // UUID 형식인지 확인
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)
-      
-      let query = supabase
-        .from('products')
-        .select('average_rating, name')
-      
-      if (isUUID) {
-        query = query.eq('id', productId)
-      } else {
-        // slug로 조회
-        query = query.eq('slug', productId)
-      }
-      
-      const { data } = await query.single()
-      
-      if (data) {
-        setAverageRating(data.average_rating || 0)
+      const res = await fetch(`/api/products/${productId}`)
+      const data = await res.json().catch(() => null)
+      if (res.ok && data) {
         setProductName(data.name || '')
       }
     }
@@ -178,18 +162,6 @@ export default function ReviewList({ productId, onWriteReview, limit = 10, showV
   const handleEditSuccess = async () => {
     setShowEditModal(false)
     setEditingReview(null)
-    
-    const { data: productData } = await supabase
-      .from('products')
-      .select('average_rating, review_count')
-      .eq('id', productId)
-      .single()
-    
-    if (productData) {
-      setAverageRating(productData.average_rating || 0)
-      setTotal(productData.review_count || 0)
-    }
-    
     fetchReviews()
   }
 
@@ -204,18 +176,6 @@ export default function ReviewList({ productId, onWriteReview, limit = 10, showV
       }
 
       showSuccess('리뷰가 삭제되었습니다.')
-      
-      const { data: productData } = await supabase
-        .from('products')
-        .select('average_rating, review_count')
-        .eq('id', productId)
-        .single()
-      
-      if (productData) {
-        setAverageRating(productData.average_rating || 0)
-        setTotal(productData.review_count || 0)
-      }
-      
       fetchReviews()
     } catch (error) {
       showError(error)

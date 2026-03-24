@@ -18,7 +18,6 @@ const sidebarMenus = [
 const sidebarInfo = [
   { href: '/profile/addresses', label: '배송지 관리', icon: 'address' },
   { href: '/profile/reviews', label: '나의 리뷰', icon: 'review' },
-  { href: '/profile/edit', label: '회원 정보 관리', icon: 'user' },
 ]
 
 const sidebarSecondary = [

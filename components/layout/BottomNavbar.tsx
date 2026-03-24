@@ -81,7 +81,7 @@ export default function BottomNavbar() {
               href="/"
               prefetch={false}
               className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                pathname === '/' ? 'text-red-600' : 'text-black'
+                pathname === '/' ? 'text-green-800' : 'text-black'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ export default function BottomNavbar() {
               href="/categories"
               prefetch={false}
               className={`flex flex-col items-center justify-center flex-1 py-2 relative ${
-                pathname === '/categories' ? 'text-red-600' : 'text-black'
+                pathname === '/categories' ? 'text-green-800' : 'text-black'
               }`}
             >
               {/* 검색 아이콘과 카테고리 아이콘을 합친 아이콘 */}
@@ -122,7 +122,7 @@ export default function BottomNavbar() {
               href="/wishlist"
               prefetch={false}
               className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                pathname === '/wishlist' ? 'text-red-600' : 'text-black'
+                pathname === '/wishlist' ? 'text-green-800' : 'text-black'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@ export default function BottomNavbar() {
                 }
               }}
               className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                pathname?.startsWith('/auth') || pathname?.startsWith('/profile') ? 'text-red-600' : 'text-black'
+                pathname?.startsWith('/auth') || pathname?.startsWith('/profile') ? 'text-green-800' : 'text-black'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

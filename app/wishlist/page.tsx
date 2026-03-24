@@ -98,7 +98,7 @@ export default function WishlistPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span
-                className={`absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center transition ${
+                className={`absolute top-0 right-0 bg-green-800 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center transition ${
                   cartCount > 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-0 pointer-events-none'
                 }`}
                 suppressHydrationWarning
@@ -121,7 +121,7 @@ export default function WishlistPage() {
             <p className="text-xl text-gray-600 mb-6">찜한 상품이 없습니다.</p>
             <button
               onClick={() => router.push('/products')}
-              className="bg-white text-red-600 border border-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+              className="bg-white text-green-800 border border-green-800 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
             >
               쇼핑 계속하기
             </button>

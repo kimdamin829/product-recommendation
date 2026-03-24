@@ -142,12 +142,12 @@ function ProfilePageContent() {
                 <h1 className="text-lg font-medium text-black">로그인</h1>
                 <span className="text-4xl font-medium text-black leading-none">·</span>
                 <h1 className="text-lg font-medium text-black">회원가입</h1>
-                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </Link>
               <p className="text-sm text-black mt-3">회원가입하고 혜택 받아가세요!</p>
-              <Link href="/auth/signup" className="inline-block mt-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-blue-950 transition">신규 회원 가입 혜택 보기</Link>
+              <Link href="/auth/signup" className="inline-block mt-2 px-3 py-2 bg-green-800 text-white text-sm font-medium rounded-lg hover:bg-blue-950 transition">신규 회원 가입 혜택 보기</Link>
             </div>
           )}
         </div>
@@ -163,47 +163,39 @@ function ProfilePageContent() {
             ) : (
               <>
                 {/* 사용자 정보 섹션 - 로그인 상태 */}
-                <div className="bg-pink-100 rounded-lg shadow-md p-6 mb-6">
+                <div className="bg-green-600 rounded-lg shadow-md p-6 mb-6">
                   <div className="mb-3">
-                    <Link
-                      href="/profile/edit"
-                      className="flex items-center gap-2 hover:opacity-80 transition"
-                    >
-                      <h1 className="text-base font-medium text-gray-900">
-                        안녕하세요. {userName}님
-                      </h1>
-                      <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                    <p className="text-xs text-gray-900 mt-1">주문 금액의 1% 적립</p>
+                    <h1 className="text-base font-medium text-white">
+                      안녕하세요. 유생{userName}님
+                    </h1>
+                    <p className="text-xs text-white mt-1">주문 금액의 1% 적립</p>
                   </div>
                   
                   {/* 통계 버튼들 */}
                   <div className="grid grid-cols-2 gap-3">
                     <Link
                       href="/orders"
-                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-red-300"
+                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">주문 내역</div>
                       <div className="text-lg font-semibold text-gray-900">{orderCount}건</div>
                     </Link>
                     <Link
                       href="/profile/points"
-                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-red-300"
+                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">포인트</div>
                       <div className="text-lg font-semibold text-gray-900">{points.toLocaleString()}원</div>
                     </Link>
                     <Link
                       href="/profile/coupons"
-                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-red-300"
+                      className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">쿠폰</div>
                       <div className="text-lg font-semibold text-gray-900">{couponCount}장</div>
                     </Link>
                     <div
-                      className="px-4 py-2 bg-white rounded-lg text-left cursor-default border border-red-300"
+                      className="px-4 py-2 bg-white rounded-lg text-left cursor-default border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">선물함</div>
                       <div className="text-lg font-semibold text-gray-900">{giftCount}건</div>
@@ -309,6 +301,16 @@ function ProfilePageContent() {
               </Link>
             </div>
             )}
+            {!loadingProfile && (
+              <div className="mt-6 mb-2">
+                <button
+                  onClick={handleSignOut}
+                  className="w-full py-3 rounded-lg bg-green-800 text-white text-sm font-semibold hover:bg-green-900 transition"
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -326,14 +328,14 @@ function ProfilePageContent() {
                   <h1 className="text-lg font-medium text-black">
                     회원가입
                   </h1>
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
                 <p className="text-sm text-black mt-3">회원가입하고 혜택 받아가세요!</p>
                 <Link
                   href="/auth/signup"
-                  className="w-full mt-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-blue-950 transition flex items-center justify-between"
+                  className="w-full mt-2 px-3 py-2 bg-green-800 text-white text-sm font-medium rounded-lg hover:bg-blue-950 transition flex items-center justify-between"
                 >
                   <span>신규 회원 가입 혜택 보기</span>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

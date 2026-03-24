@@ -51,7 +51,7 @@ export default function AddressModal({
                   onClose()
                   router.push('/profile/addresses')
                 }}
-                className="px-4 py-2 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-blue-50"
+                className="px-4 py-2 bg-white text-green-800 border border-green-800 rounded-lg hover:bg-blue-50"
               >
                 배송지 등록하기
               </button>
@@ -77,7 +77,7 @@ export default function AddressModal({
                       <span className="text-xs bg-primary-800 text-white px-2 py-0.5 rounded">기본</span>
                     )}
                     {selectedAddressId === address.id && (
-                      <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded">선택됨</span>
+                      <span className="text-xs bg-green-800 text-white px-2 py-0.5 rounded">선택됨</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-700 mb-1">
@@ -96,7 +96,7 @@ export default function AddressModal({
               onClose()
               router.push('/profile/addresses')
             }}
-            className="flex-1 py-2.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-blue-50"
+            className="flex-1 py-2.5 text-sm font-medium text-green-800 border border-green-800 rounded-lg hover:bg-blue-50"
           >
             배송지 관리
           </button>

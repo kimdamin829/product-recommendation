@@ -40,7 +40,7 @@ export default function OrdersList({
         <p className="text-xl text-gray-600 mb-6">주문 내역이 없습니다.</p>
         <button
           onClick={() => router.push('/products')}
-          className="bg-white text-red-600 border border-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+          className="bg-white text-green-800 border border-green-800 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
         >
           쇼핑 시작하기
         </button>

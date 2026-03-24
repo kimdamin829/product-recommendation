@@ -1,26 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
+import { DEPARTMENT_ID_TO_CATEGORY } from '@/lib/utils/constants'
 
 export const dynamic = 'force-dynamic'
 
-// GET: products 테이블에서 사용 중인 카테고리 목록 조회
+// GET: demo_products.department_id 기준 카테고리 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = createSupabaseAdminClient()
 
-    // products 테이블에서 고유한 category 값 조회 (deleted 상태 제외)
     const { data, error } = await supabase
-      .from('products')
-      .select('category')
-      .neq('status', 'deleted')
-      .not('category', 'is', null)
+      .from('demo_products')
+      .select('department_id')
+      .not('department_id', 'is', null)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    // 고유한 카테고리 목록 추출 및 정렬
-    const uniqueCategories = Array.from(new Set(data?.map((item: any) => item.category).filter(Boolean))) as string[]
+    const uniqueCategories = Array.from(
+      new Set(
+        (data || [])
+          .map((item: any) => DEPARTMENT_ID_TO_CATEGORY[item.department_id as number] || null)
+          .filter(Boolean)
+      )
+    ) as string[]
     const sortedCategories = uniqueCategories.sort()
 
     return NextResponse.json({ categories: sortedCategories })

@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from '../supabase/supabase-server'
 import { User } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
+import { createSupabaseAdminClient } from '../supabase/supabase-server'
 
 /**
  * 서버에서 사용자 인증 정보를 가져오는 헬퍼 함수
@@ -10,6 +12,12 @@ import { NextRequest } from 'next/server'
  */
 export async function getUserFromServer(): Promise<User | null> {
   try {
+    const cookieStore = await cookies()
+    const demoUserId = cookieStore.get('demo_user_id')?.value
+    if (demoUserId) {
+      return { id: demoUserId } as User
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     
@@ -26,6 +34,11 @@ export async function getUserFromServer(): Promise<User | null> {
 
 export async function getUserFromRequest(request: NextRequest): Promise<User | null> {
   try {
+    const demoUserId = request.cookies.get('demo_user_id')?.value
+    if (demoUserId) {
+      return { id: demoUserId } as User
+    }
+
     const supabase = await createSupabaseServerClient()
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -50,6 +63,19 @@ type ActiveUserResult =
 
 export async function requireActiveUserFromServer(): Promise<ActiveUserResult> {
   try {
+    const cookieStore = await cookies()
+    const demoUserId = cookieStore.get('demo_user_id')?.value
+    if (demoUserId) {
+      const admin = createSupabaseAdminClient()
+      const { data } = await admin
+        .from('demo_users')
+        .select('user_id')
+        .eq('user_id', demoUserId)
+        .maybeSingle()
+      if (!data) return { error: 'unauthorized' }
+      return { user: { id: demoUserId } as User }
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user }, error } = await supabase.auth.getUser()
 

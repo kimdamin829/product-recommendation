@@ -48,7 +48,7 @@ function renderContent(notification: NotificationItem, router: ReturnType<typeof
   const makeLink = (label: string, href: string) => (
     <button
       onClick={() => router.push(href)}
-      className="text-blue-600 hover:text-red-600 underline font-medium"
+      className="text-blue-600 hover:text-green-800 underline font-medium"
     >
       {label}
     </button>

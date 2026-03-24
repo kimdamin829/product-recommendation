@@ -52,8 +52,8 @@ export default function FreeShippingProgress({
         <div 
           className={`h-2 rounded-full transition-all duration-500 ease-out ${
             isCompleted 
-              ? 'bg-gradient-to-r from-green-500 to-green-600' 
-              : 'bg-red-600'
+              ? 'bg-gradient-to-r from-green-1000 to-green-800' 
+              : 'bg-green-800'
           }`}
           style={{ width: `${percentage}%` }}
         >

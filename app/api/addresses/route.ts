@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
 import { requireActiveUserFromServer } from '@/lib/auth/auth-server'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
     const user = authResult.user
 
-    const supabase = await createSupabaseServerClient()
+    const supabase = createSupabaseAdminClient()
     const { data: addresses, error } = await supabase
       .from('addresses')
       .select('id, user_id, name, recipient_name, recipient_phone, zipcode, address, address_detail, delivery_note, is_default, created_at, updated_at')
@@ -24,6 +24,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) {
+      // demo 환경에서 addresses 테이블이 없으면 빈 목록으로 처리
+      if (error.code === '42P01') {
+        return NextResponse.json({ addresses: [] })
+      }
       console.error('주소 조회 실패:', error)
       return NextResponse.json({ error: '주소 조회 실패' }, { status: 500 })
     }
@@ -49,17 +53,20 @@ export async function POST(request: NextRequest) {
     }
     const user = authResult.user
 
-    const supabase = await createSupabaseServerClient()
+    const supabase = createSupabaseAdminClient()
     const body = await request.json()
     const { name, recipient_name, recipient_phone, zipcode, address, address_detail, delivery_note, is_default } = body
 
     // 기본 주소로 설정하는 경우, 기존 기본 주소 해제
     if (is_default) {
-      await supabase
+      const unsetRes = await supabase
         .from('addresses')
         .update({ is_default: false })
         .eq('user_id', user.id)
         .eq('is_default', true)
+      if (unsetRes.error && unsetRes.error.code === '42P01') {
+        return NextResponse.json({ error: '주소 기능이 설정되지 않았습니다.' }, { status: 200 })
+      }
     }
 
     // 새 주소 추가
@@ -80,6 +87,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      if (error.code === '42P01') {
+        return NextResponse.json({ error: '주소 기능이 설정되지 않았습니다.' }, { status: 200 })
+      }
       console.error('주소 추가 실패:', error)
       return NextResponse.json({ error: '주소 추가 실패' }, { status: 500 })
     }

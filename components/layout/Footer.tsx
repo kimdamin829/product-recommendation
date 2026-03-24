@@ -79,7 +79,7 @@ export default function Footer() {
                   href={link.href}
                   prefetch={false}
                   className={`font-bold transition ${
-                    pathname === link.href ? 'text-red-600' : 'text-gray-600 hover:text-gray-800'
+                    pathname === link.href ? 'text-green-800' : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
                   {link.label}

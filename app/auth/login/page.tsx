@@ -3,74 +3,37 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase/supabase'
-import { mutateUnreadCount } from '@/lib/swr'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { useAuth } from '@/lib/auth/auth-context'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { refreshSession } = useAuth()
   const redirectAfterLogin = searchParams.get('next') || '/'
   const urlError = searchParams.get('error')
-  const fromSignup = searchParams.get('signup') === '1'
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(urlError || '')
-  const [showSignupSuccess, setShowSignupSuccess] = useState(fromSignup)
 
-  useEffect(() => {
-    if (!fromSignup) return
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('signup')
-    const cleanSearch = params.toString()
-    const replaceUrl = cleanSearch ? `?${cleanSearch}` : window.location.pathname
-    window.history.replaceState(null, '', replaceUrl)
-  }, [fromSignup, searchParams])
-
-  useEffect(() => {
-    let isMounted = true
-    const checkExistingSession = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      if (!isMounted) return
-      if (sessionData?.session?.access_token) {
-        router.replace(`/auth/finalize?next=${encodeURIComponent(redirectAfterLogin)}`)
-      }
-    }
-    checkExistingSession().catch(() => {})
-    return () => {
-      isMounted = false
-    }
-  }, [router, redirectAfterLogin])
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleDemoLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
-      const resolveRes = await fetch('/api/auth/resolve-username', {
+      const loginRes = await fetch('/api/auth/demo-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ userId }),
       })
-
-      const resolveData = await resolveRes.json().catch(() => ({}))
-      if (!resolveRes.ok) {
-        throw new Error(resolveData?.error || '로그인 정보를 찾을 수 없습니다.')
+      const loginData = await loginRes.json().catch(() => ({}))
+      if (!loginRes.ok) {
+        throw new Error(loginData?.error || '로그인에 실패했습니다.')
       }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: resolveData.email,
-        password,
-      })
-
-      if (error) {
-        throw error
-      }
-      mutateUnreadCount().catch(() => {})
-      router.replace(`/auth/finalize?next=${encodeURIComponent(redirectAfterLogin)}`)
+      await refreshSession()
+      router.replace(redirectAfterLogin)
       router.refresh()
     } catch (error: any) {
       setError(error.message || '로그인에 실패했습니다.')
@@ -124,52 +87,21 @@ function LoginForm() {
         <div className="max-w-md w-full lg:max-w-sm lg:mx-auto">
           <h2 className="text-3xl font-bold text-center mb-8 text-primary-900">로그인</h2>
 
-            {showSignupSuccess && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-start gap-2">
-                <span className="flex-shrink-0 mt-0.5" aria-hidden>✓</span>
-                <div className="flex-1">
-                  <p className="font-medium">회원가입이 완료되었습니다.</p>
-                  <p className="mt-1 text-green-700">아래에서 로그인해주세요.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSignupSuccess(false)}
-                  className="flex-shrink-0 p-1 text-green-600 hover:text-green-800 rounded"
-                  aria-label="닫기"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
             {(error || urlError) && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">
                 {error || urlError}
               </div>
             )}
 
-            {/* 이메일 로그인 */}
-            <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
+            <form onSubmit={handleDemoLogin} className="space-y-4 mb-6">
               <div>
                 <input
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-800"
                   placeholder="아이디를 입력해주세요"
-                  autoComplete="username"
-                />
-              </div>
-
-              <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                  placeholder="비밀번호를 입력해주세요"
                 />
               </div>
 
@@ -177,27 +109,12 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition disabled:bg-gray-400"
+                className="w-full bg-green-800 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition disabled:bg-gray-400"
               >
-                {loading ? '로그인 중...' : '로그인'}
+                {loading ? '로그인 중...' : '아이디로 로그인'}
               </button>
             </form>
 
-            <div className="mt-6 text-center">
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                <Link href="/auth/signup" className="text-gray-600 hover:text-gray-900">
-                  회원가입
-                </Link>
-                <span className="text-gray-400">|</span>
-                <Link href="/auth/find-id" className="text-gray-600 hover:text-gray-900">
-                  아이디 찾기
-                </Link>
-                <span className="text-gray-400">|</span>
-                <Link href="/auth/find-password" title="비밀번호 찾기" className="text-gray-600 hover:text-gray-900">
-                  비밀번호 찾기
-                </Link>
-              </div>
-            </div>
         </div>
       </main>
 

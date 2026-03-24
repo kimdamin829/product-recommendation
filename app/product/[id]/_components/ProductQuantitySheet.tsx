@@ -1,8 +1,6 @@
 'use client'
 
 import { Product } from '@/lib/supabase/supabase'
-import { formatPrice } from '@/lib/utils/utils'
-import { getFinalPricing } from '@/lib/product/product.pricing'
 
 interface ProductQuantitySheetProps {
   product: Product
@@ -19,13 +17,6 @@ export default function ProductQuantitySheet({
   onConfirm,
   onCancel,
 }: ProductQuantitySheetProps) {
-  const pricing = getFinalPricing({
-    basePrice: product.price,
-    promotion: product.promotion,
-  })
-
-  const discountedTotal = pricing.finalPrice * quantity
-  const originalTotal = product.price * quantity
   let weightLabel: string | null = null
   if (typeof product.weight_gram === 'number' && product.weight_gram > 0) {
     if (product.weight_gram >= 1000) {
@@ -57,19 +48,7 @@ export default function ProductQuantitySheet({
             {weightLabel ? ` ${weightLabel}` : ''}
           </h3>
 
-            <div className="flex items-end justify-between">
-              {/* 가격: 왼쪽 할인가, 오른쪽 정상가 (수량 반영) */}
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold text-gray-900">
-                  {formatPrice(discountedTotal)}원
-                </span>
-                {discountedTotal !== originalTotal && (
-                  <span className="text-xs text-gray-400 line-through">
-                    {formatPrice(originalTotal)}원
-                  </span>
-                )}
-              </div>
-
+            <div className="flex items-end justify-end">
               {/* 수량 조절 */}
               <div className="flex items-center border border-gray-300 rounded-full bg-gray-50 px-3 py-2">
                 <button

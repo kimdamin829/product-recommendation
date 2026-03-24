@@ -143,7 +143,7 @@ function ProductCard({ product }: ProductCardProps) {
           {/* 프로모션 배지 */}
           {promotionBadge && !soldOut && (
             <div className="absolute top-0 left-0 z-10">
-              <span className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg">
+              <span className="bg-green-800 text-white px-2 py-1 text-xs font-bold shadow-lg">
                 {promotionBadge}
               </span>
             </div>
@@ -158,8 +158,8 @@ function ProductCard({ product }: ProductCardProps) {
               loading="lazy"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm bg-gray-200">
-              이미지 준비중
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm bg-gray-300">
+              이미지 없음
             </div>
           )}
           {/* 품절 오버레이 */}
@@ -191,7 +191,7 @@ function ProductCard({ product }: ProductCardProps) {
                 aria-label="찜하기"
               >
                 {isWished ? (
-                  <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-green-800" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 ) : (
@@ -203,7 +203,7 @@ function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           <div className="flex items-center mb-0">
-            <h3 className="text-[15px] font-medium line-clamp-1 text-primary-900 leading-tight tracking-tight">{product.name}</h3>
+            <h3 className="text-[15px] font-medium line-clamp-2 text-primary-900 leading-tight tracking-tight">{product.name}</h3>
             {product.weight_gram && (
               <span className="text-[15px] font-medium text-primary-900 leading-tight tracking-tight ml-1">
                 {formatWeightGram(product.weight_gram)}
@@ -211,38 +211,8 @@ function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           
-          {/* 가격 영역을 2줄로 고정하여 카드 높이를 통일 */}
-          {discountPercent > 0 ? (
-            <>
-              <div className="text-xs text-gray-500 line-through mt-0 leading-tight">
-                {formatPrice(product.price)}원
-              </div>
-              <div className="flex items-baseline gap-2 mt-0 leading-tight">
-                <span className="text-base md:text-lg font-bold text-red-600">{discountPercent}%</span>
-                <span className="text-base font-extrabold text-primary-900">
-                  {formatPrice(discountPrice)}<span className="text-xs text-gray-600">원</span>
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* 할인 미적용 시에도 1줄을 비워 동일 높이 확보 (줄간격 최소화) */}
-              <div className="invisible h-1 leading-none">.</div>
-              <div className="flex items-baseline mt-0 leading-tight">
-                <span className="text-base font-bold text-primary-900">
-                  {formatPrice(product.price)}<span className="text-xs text-gray-600">원</span>
-                </span>
-              </div>
-            </>
-          )}
-          
-          {/* 100g당 가격 표시 */}
-          {pricePer100g && (
-            <p className="text-sm font-medium text-gray-600 mt-0.5 mb-0 leading-tight tracking-tighter">
-              (100g당 {Math.round(pricePer100g).toLocaleString()}원)
-            </p>
-          )}
-          
+          {/* 가격/할인 표시 제거 */}
+
           {/* 프로모션 상품 버튼 (활성화된 BOGO 타입만) */}
           {product.promotion?.is_active && product.promotion?.type === 'bogo' && promotionBadge && (
             <button

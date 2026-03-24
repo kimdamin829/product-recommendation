@@ -62,7 +62,7 @@ export default function NoticesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span
-                className={`absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center transition ${
+                className={`absolute top-0 right-0 bg-green-800 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center transition ${
                   cartCount > 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-0 pointer-events-none'
                 }`}
                 suppressHydrationWarning
@@ -95,7 +95,7 @@ export default function NoticesPage() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {notice.isImportant && (
-                        <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded">중요</span>
+                        <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-1 rounded">중요</span>
                       )}
                       <h3 className="text-base font-semibold text-gray-900">{notice.title}</h3>
                     </div>

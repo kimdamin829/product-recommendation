@@ -22,7 +22,7 @@ export default function OrdererInfo({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            이름 <span className="text-red-500">*</span>
+            이름 <span className="text-green-1000">*</span>
           </label>
           <input
             type="text"
@@ -36,7 +36,7 @@ export default function OrdererInfo({
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            연락처 <span className="text-red-500">*</span>
+            연락처 <span className="text-green-1000">*</span>
           </label>
           <input
             type="tel"

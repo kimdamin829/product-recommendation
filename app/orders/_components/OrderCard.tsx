@@ -47,13 +47,6 @@ export default function OrderCard({
   reviewDeadline.setMonth(reviewDeadline.getMonth() + 1)
   const isReviewWindowOpen = new Date() < reviewDeadline
 
-  const copyOrderNumber = () => {
-    if (order.order_number) {
-      navigator.clipboard.writeText(order.order_number)
-      toast.success('주문번호가 복사되었습니다.', { duration: 2000 })
-    }
-  }
-
   const deliveryTypeLabel = getDeliveryTypeText(order.delivery_type)
   const statusColorClass = getStatusTextColor(order.status)
 
@@ -74,27 +67,8 @@ export default function OrderCard({
       {/* 헤더: 왼쪽 주문일/번호, 오른쪽 상태 */}
       <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-base font-semibold text-gray-900 mb-0.5">
-            {new Date(order.created_at).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-            }).replace(/\. /g, '.').replace(/\.$/, '')}
-          </p>
           {order.order_number && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-gray-500">주문번호 {order.order_number}</span>
-              <button
-                type="button"
-                onClick={copyOrderNumber}
-                aria-label="주문번호 복사"
-                className="p-0.5 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-            </div>
+            <span className="text-base font-semibold text-black">주문번호 {order.order_number}</span>
           )}
         </div>
 

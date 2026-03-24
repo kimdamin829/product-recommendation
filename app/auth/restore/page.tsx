@@ -121,7 +121,7 @@ function RestoreAccountContent() {
           </p>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md mb-6 text-center">
+            <div className="bg-green-100 text-green-800 text-sm p-3 rounded-md mb-6 text-center">
               {error}
             </div>
           )}

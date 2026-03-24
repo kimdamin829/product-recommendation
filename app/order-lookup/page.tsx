@@ -528,7 +528,7 @@ function OrderLookupContent() {
       <main className="flex-1 container mx-auto px-4 py-6 pb-24 lg:pb-6">
         <h2 className="hidden lg:block text-3xl font-bold text-center mb-8 text-primary-900 lg:mt-10">주문조회</h2>
         {doneMessage && step === 'form' && sessionCheckDone && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 w-full lg:max-w-sm lg:mx-auto">
+          <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-lg text-sm text-green-900 w-full lg:max-w-sm lg:mx-auto">
             주문이 완료되었습니다. 아래에서 주문번호와 휴대폰 번호로 인증 후 조회하세요.
           </div>
         )}
@@ -561,7 +561,7 @@ function OrderLookupContent() {
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="예: 20250303-ABCD"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-800"
                   autoComplete="off"
                 />
               </div>
@@ -575,12 +575,12 @@ function OrderLookupContent() {
                   value={phone}
                   onChange={(e) => setPhone(normalizePhoneInput(e.target.value))}
                   placeholder="휴대폰 번호를 입력해주세요."
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-800"
                   autoComplete="tel"
                   maxLength={13}
                 />
               </div>
-              {error && <p className="text-sm text-red-600 w-full lg:max-w-sm">{error}</p>}
+              {error && <p className="text-sm text-green-800 w-full lg:max-w-sm">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}
@@ -611,11 +611,11 @@ function OrderLookupContent() {
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                   placeholder="6자리 숫자"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-center text-lg tracking-widest"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-800 text-center text-lg tracking-widest"
                   autoComplete="one-time-code"
                 />
               </div>
-              {error && <p className="text-sm text-red-600 w-full lg:max-w-sm">{error}</p>}
+              {error && <p className="text-sm text-green-800 w-full lg:max-w-sm">{error}</p>}
               <button
                 type="submit"
                 disabled={loading || otpCode.length !== 6}

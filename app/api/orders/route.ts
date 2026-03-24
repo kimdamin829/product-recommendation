@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
 import { requireActiveUserFromServer } from '@/lib/auth/auth-server'
 import { usePoints } from '@/lib/point/points'
 export const dynamic = 'force-dynamic'
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // GET: 사용자 주문 목록 조회 (구매확정 여부 포함)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabaseAdmin = createSupabaseAdminClient()
     const { searchParams } = new URL(request.url)
     const monthsParam = searchParams.get('months')
     const months = monthsParam ? Math.min(36, Math.max(1, parseInt(monthsParam, 10) || 1)) : 1
@@ -21,38 +21,14 @@ export async function GET(request: NextRequest) {
     }
     const user = authResult.user
 
-    const since = new Date()
-    since.setMonth(since.getMonth() - months)
-    const sinceIso = since.toISOString()
-
-    // 주문 목록 조회
-    // 1. 먼저 주문 목록만 조회 (조인 없이)
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        user_id,
-        order_number,
-        total_amount,
-        status,
-        delivery_type,
-        delivery_time,
-        shipping_address,
-        shipping_name,
-        shipping_phone,
-        delivery_note,
-        tracking_number,
-        is_gift,
-        gift_token,
-        gift_message,
-        gift_expires_at,
-        refund_completed_at,
-        created_at,
-        updated_at
-      `)
+    // demo 환경: demo_orders + demo_order_items 기반 주문내역
+    // months 파라미터는 created_at 컬럼이 없어 적용하지 않고 최신 order_number 순으로 반환한다.
+    void months
+    const { data: demoOrders, error: ordersError } = await supabaseAdmin
+      .from('demo_orders')
+      .select('order_id, user_id, order_number')
       .eq('user_id', user.id)
-      .gte('created_at', sinceIso)
-      .order('created_at', { ascending: false })
+      .order('order_number', { ascending: false })
 
     if (ordersError) {
       console.error('주문 목록 조회 실패:', ordersError)
@@ -62,74 +38,84 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
-    if (!orders || orders.length === 0) {
+    if (!demoOrders || demoOrders.length === 0) {
       return NextResponse.json({ orders: [] })
     }
 
-    // 2. 주문 상품 및 상품 정보 조회
-    const orderIds = orders.map(o => o.id)
-    const { data: orderItems, error: itemsError } = await supabase
-      .from('order_items')
-      .select(`
-        id,
-        order_id,
-        product_id,
-        quantity,
-        price,
-        products (
-          id,
-          name
-        )
-      `)
+    // 주문 상품 조회
+    const orderIds = demoOrders.map((o: any) => o.order_id)
+    const { data: demoOrderItems, error: itemsError } = await supabaseAdmin
+      .from('demo_order_items')
+      .select('id, order_id, product_id, add_to_cart_order')
       .in('order_id', orderIds)
+      .order('add_to_cart_order', { ascending: true })
 
     if (itemsError) {
       console.error('주문 상품 조회 실패:', itemsError)
-      // 상품 조회 실패해도 주문 목록은 반환 (빈 상품 목록)
     }
 
-    // 3. 상품 이미지 조회 (priority 오름차순, 0이 우선 → 상품당 1장)
-    const productIds = Array.from(new Set(orderItems?.map(item => item.product_id) || []))
-    let productImages: Record<string, string> = {}
+    const productIds = Array.from(
+      new Set((demoOrderItems || []).map((item: any) => Number(item.product_id)).filter((id: number) => Number.isFinite(id)))
+    )
+    const { data: demoProducts } = productIds.length
+      ? await supabaseAdmin
+          .from('demo_products')
+          .select('product_id, product_name')
+          .in('product_id', productIds)
+      : { data: [] as any[] }
 
-    if (productIds.length > 0) {
-      const { data: imagesData } = await supabase
-        .from('product_images')
-        .select('product_id, image_url, priority')
-        .in('product_id', productIds)
-        .order('priority', { ascending: true })
+    const productNameMap = new Map<number, string>(
+      (demoProducts || []).map((p: any) => [Number(p.product_id), p.product_name || '상품'])
+    )
 
-      const byProduct = new Map<string, string>()
-      imagesData?.forEach((img: any) => {
-        if (!byProduct.has(img.product_id)) byProduct.set(img.product_id, img.image_url)
-      })
-      productImages = Object.fromEntries(byProduct)
-    }
-
-    // 4. 데이터 조립
-    const itemsMap = (orderItems || []).reduce((acc: any, item: any) => {
-      if (!acc[item.order_id]) acc[item.order_id] = []
-      
-      const product = Array.isArray(item.products) ? item.products[0] : item.products
-      
-      acc[item.order_id].push({
-        ...item,
+    const itemsMap = (demoOrderItems || []).reduce((acc: any, item: any) => {
+      const key = String(item.order_id)
+      if (!acc[key]) acc[key] = []
+      acc[key].push({
+        id: String(item.id),
+        order_id: String(item.order_id),
+        product_id: String(item.product_id),
+        quantity: 1,
+        price: 0,
         product: {
-          name: product?.name || '상품',
-          image_url: productImages[item.product_id] || null
-        }
+          name: productNameMap.get(Number(item.product_id)) || '상품',
+          image_url: null,
+        },
       })
       return acc
     }, {})
 
-    const ordersWithDetails = orders.map(order => ({
-      ...order,
-      order_items: itemsMap[order.id] || [],
-      // 구매확정 여부는 status로 판별 (서버 기준)
-      is_confirmed: order.status === 'CONFIRMED'
-    }))
+    const now = Date.now()
+    const orders = demoOrders.map((order: any, index: number) => {
+      // order_number가 작을수록 과거 주문으로 보고 created_at을 보정
+      const syntheticCreatedAt = new Date(now - (demoOrders.length - index) * 60_000).toISOString()
+      return {
+        id: String(order.order_id),
+        user_id: String(order.user_id),
+        order_number: String(order.order_number),
+        total_amount: 0,
+        status: 'CONFIRMED',
+        delivery_type: 'regular',
+        delivery_time: null,
+        shipping_address: '',
+        shipping_name: '',
+        shipping_phone: '',
+        delivery_note: null,
+        tracking_number: null,
+        tracking_company: null,
+        is_gift: false,
+        gift_token: null,
+        gift_message: null,
+        gift_expires_at: null,
+        refund_completed_at: null,
+        created_at: syntheticCreatedAt,
+        updated_at: syntheticCreatedAt,
+        order_items: itemsMap[String(order.order_id)] || [],
+        is_confirmed: true,
+      }
+    })
 
-    return NextResponse.json({ orders: ordersWithDetails })
+    return NextResponse.json({ orders })
   } catch (error: any) {
     console.error('주문 조회 오류:', error)
     return NextResponse.json({ 

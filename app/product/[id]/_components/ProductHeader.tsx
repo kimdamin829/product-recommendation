@@ -55,7 +55,7 @@ export default function ProductHeader({ product, cartCount, mounted }: ProductHe
           </svg>
           {mounted && cartCount > 0 && (
             <span
-              className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+              className="absolute top-0 right-0 bg-green-800 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
               suppressHydrationWarning
               aria-hidden={cartCount <= 0}
             >

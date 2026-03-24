@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase/supabase'
 import { Product } from '@/lib/supabase/supabase'
 
 export interface ProductImage {
@@ -43,27 +42,8 @@ export function useProductImages(
       return
     }
 
-    // 상품 이미지 목록 불러오기
-    supabase
-      .from('product_images')
-      .select('id, image_url, priority')
-      .eq('product_id', product.id)
-      .order('priority', { ascending: true })
-      .order('created_at', { ascending: true })
-      .then(({ data, error }: { data: ProductImage[] | null; error: any }) => {
-        if (!error && data && data.length > 0) {
-          setImages(data)
-          // 첫 번째 이미지를 product.image_url로 설정
-          if (product && !product.image_url) {
-            // 이미지는 state로만 관리하고 product 객체는 직접 수정하지 않음
-          }
-        } else {
-          setImages([])
-        }
-      })
-      .catch(() => {
-        setImages([])
-      })
+    // demo 스키마에서는 product_images를 사용하지 않으므로 이미지 목록은 비움
+    setImages([])
   }, [product?.id])
 
   const handlePrevious = () => {

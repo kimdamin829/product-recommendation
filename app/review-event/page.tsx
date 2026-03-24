@@ -30,7 +30,7 @@ export default function ReviewEventPage() {
                 <div className="px-2.5 pt-2 pb-1">
                   <div className="relative flex items-center justify-center">
                     <div className="absolute left-0 flex items-center gap-4 text-gray-700">
-                      <svg className="w-5 h-5 text-red-500" fill="currentColor" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
+                      <svg className="w-5 h-5 text-green-1000" fill="currentColor" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                       </svg>
                     </div>
@@ -64,8 +64,8 @@ export default function ReviewEventPage() {
               <div className="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden">
                 <div className="px-3 py-2 border-b border-gray-200 grid grid-cols-[auto,2fr,auto] items-center gap-2">
                   <div className="flex items-center gap-1">
-                    <div className="w-5 h-5 rounded-full bg-green-600 text-white text-[9px] font-semibold flex items-center justify-center">N</div>
-                    <p className="text-[11px] font-semibold text-green-600">blog</p>
+                    <div className="w-5 h-5 rounded-full bg-green-800 text-white text-[9px] font-semibold flex items-center justify-center">N</div>
+                    <p className="text-[11px] font-semibold text-green-800">blog</p>
                   </div>
                   <div className="text-center text-xs font-semibold text-gray-900">고기러버J</div>
                   <div className="text-gray-500 text-lg justify-self-end">☰</div>
@@ -139,8 +139,8 @@ export default function ReviewEventPage() {
                   3
                 </div>
                 <div className="mt-4 md:mt-6 mb-6 md:mb-8 flex items-center gap-2 md:gap-3">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-800" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M16.273 12.845L7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
                     </svg>
                   </div>

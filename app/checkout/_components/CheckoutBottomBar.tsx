@@ -22,7 +22,7 @@ export default function CheckoutBottomBar({
               type="submit"
               form="checkout-form"
               disabled={isProcessing}
-              className="w-full text-lg font-bold transition disabled:bg-gray-400 disabled:text-gray-500 flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-blue-950 py-3"
+              className="w-full text-lg font-bold transition disabled:bg-gray-400 disabled:text-gray-500 flex items-center justify-center gap-2 bg-green-800 text-white hover:bg-blue-950 py-3"
             >
               {isProcessing ? (
                 <>

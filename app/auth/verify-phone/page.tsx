@@ -201,12 +201,12 @@ function VerifyPhoneContent() {
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm whitespace-pre-line">
+            <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm whitespace-pre-line">
               {error}
             </div>
           )}
           {message && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-900 rounded-lg text-sm">
               {message}
             </div>
           )}
@@ -221,7 +221,7 @@ function VerifyPhoneContent() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-red-600"
+                  className="w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-green-800"
                   placeholder="이름을 입력해주세요"
                   required
                 />
@@ -236,7 +236,7 @@ function VerifyPhoneContent() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(normalizePhoneInput(e.target.value))}
-                  className="flex-1 min-w-0 w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-red-600"
+                  className="flex-1 min-w-0 w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-green-800"
                   placeholder="휴대폰 번호를 입력해주세요"
                   maxLength={13}
                   required
@@ -258,7 +258,7 @@ function VerifyPhoneContent() {
                   인증번호
                 </label>
                 {otpRemaining > 0 && (
-                  <span className="text-sm font-semibold text-red-600">
+                  <span className="text-sm font-semibold text-green-800">
                     {formatOtpCountdown(otpRemaining)}
                   </span>
                 )}
@@ -267,7 +267,7 @@ function VerifyPhoneContent() {
                 type="text"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                className="w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-red-600"
+                className="w-full px-1 py-2 border-b border-gray-300 focus:outline-none focus:border-green-800"
                 placeholder="6자리 숫자"
                 maxLength={6}
                 required
@@ -278,7 +278,7 @@ function VerifyPhoneContent() {
               type="button"
               onClick={handleVerify}
               disabled={loading || verificationCode.length !== 6}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition disabled:bg-gray-400"
+              className="w-full bg-green-800 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition disabled:bg-gray-400"
             >
               인증 완료
             </button>

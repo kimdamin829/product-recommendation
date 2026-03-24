@@ -190,7 +190,7 @@ export default function PromotionModal({ isOpen, onClose, product }: PromotionMo
             <h3 className="text-lg font-bold">
               🎁 {product.promotion?.type === 'bogo' && product.promotion.buy_qty ? `${product.promotion.buy_qty}+1` : '프로모션'} 골라담기
             </h3>
-            <button onClick={() => { onClose(); setPromoQuantities({}) }} className="text-red-600 text-2xl">×</button>
+            <button onClick={() => { onClose(); setPromoQuantities({}) }} className="text-green-800 text-2xl">×</button>
           </div>
         </div>
         
@@ -291,7 +291,7 @@ export default function PromotionModal({ isOpen, onClose, product }: PromotionMo
               <button
                 onClick={handlePromotionAdd}
                 disabled={getTotalPromoQuantity(promoQuantities) !== product.promotion.buy_qty + 1}
-                className="w-full py-3 bg-red-600 text-white rounded font-bold hover:bg-blue-950 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-green-800 text-white rounded font-bold hover:bg-blue-950 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 장바구니에 담기
               </button>

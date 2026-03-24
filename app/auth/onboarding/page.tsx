@@ -27,7 +27,7 @@ function OnboardingContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-red-600">
+      <div className="min-h-screen flex items-center justify-center text-sm text-green-800">
         {error}
       </div>
     )

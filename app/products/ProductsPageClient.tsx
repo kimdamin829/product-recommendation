@@ -45,7 +45,7 @@ export default function ProductsPageClient(props: ProductsPageClientProps = {}) 
     loadingMore,
     hasMore,
   } = useInfiniteProducts({
-    category: selectedCategory !== '전체' ? selectedCategory : undefined,
+    category: selectedCategory && selectedCategory !== '전체' ? selectedCategory : undefined,
     search: searchQuery || undefined,
     filter: filter || undefined,
     sort: sortOrder,
@@ -61,7 +61,7 @@ export default function ProductsPageClient(props: ProductsPageClientProps = {}) 
   }, [searchQuery, filter, selectedCategory])
 
   // 카테고리가 선택되었는지 확인
-  const hasCategory = Boolean(selectedCategory && !searchQuery && !filter)
+  const hasCategory = Boolean(!searchQuery && !filter)
 
   return (
     <div className="min-h-screen flex flex-col">

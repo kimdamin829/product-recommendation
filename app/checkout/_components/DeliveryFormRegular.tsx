@@ -98,7 +98,7 @@ export default function DeliveryFormRegular({
               <button
                 type="button"
                 onClick={onSearchAddress}
-                className="px-3 py-2 md:px-4 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-blue-50 transition whitespace-nowrap text-sm md:text-base"
+                className="px-3 py-2 md:px-4 bg-white text-green-800 border border-green-800 rounded-lg hover:bg-blue-50 transition whitespace-nowrap text-sm md:text-base"
               >
                 주소찾기
               </button>
@@ -106,7 +106,7 @@ export default function DeliveryFormRegular({
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">
-              주소 <span className="text-red-500">*</span>
+              주소 <span className="text-green-1000">*</span>
             </label>
             <input
               type="text"
@@ -158,7 +158,7 @@ export default function DeliveryFormRegular({
                   onChange={(e) => onSaveAsDefaultChange(e.target.checked)}
                   className="w-4 h-4 mt-0.5 text-primary-800 border-gray-300 rounded focus:ring-primary-500"
                 />
-                <label htmlFor="save_as_default_regular" className="ml-2 text-sm text-red-600">
+                <label htmlFor="save_as_default_regular" className="ml-2 text-sm text-green-800">
                   <span className="font-semibold">이 주소를 기본 배송지로 저장</span>
                   <p className="text-xs text-blue-700 mt-1">
                     다음 주문부터 자동으로 입력됩니다.

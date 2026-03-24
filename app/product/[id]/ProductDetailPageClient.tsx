@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getProductDescription } from '@/components/product-descriptions'
+import ProductCard from '@/components/product/ProductCard'
 import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
 import LoginPromptModal from '@/components/common/LoginPromptModal'
@@ -19,14 +20,13 @@ import { showCartAddedToast } from '@/lib/utils/error-handler'
 import { Product } from '@/lib/supabase/supabase'
 import { isSoldOut } from '@/lib/product/product-utils'
 import { getFinalPricing } from '@/lib/product/product.pricing'
-import { formatWeightGram, formatPrice } from '@/lib/utils/utils'
+import { formatWeightGram } from '@/lib/utils/utils'
 import { useProductDetail } from './_hooks/useProductDetail'
 import { useProductReviews } from './_hooks/useProductReviews'
 import { useProductImages } from './_hooks/useProductImages'
 import {
   ProductHeader,
   ProductImageGallery,
-  ProductPrice,
   ProductInfo,
   ProductBottomBar,
   ProductQuantitySheet,
@@ -69,6 +69,7 @@ export default function ProductDetailPageClient({
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [reviewOrderId, setReviewOrderId] = useState<string>('')
   const [ProductDescriptionComponent, setProductDescriptionComponent] = useState<React.ComponentType<{ productId: string; productName?: string }> | null>(null)
+  const [cooccurrenceProducts, setCooccurrenceProducts] = useState<Product[]>([])
   const [mounted, setMounted] = useState(false)
   
   // Store selectors
@@ -91,6 +92,36 @@ export default function ProductDetailPageClient({
       })
     }
   }, [product?.slug, product?.name, product?.id])
+
+  useEffect(() => {
+    if (!product?.id) {
+      setCooccurrenceProducts([])
+      return
+    }
+
+    let active = true
+    const run = async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(product.id)}/cooccurrence`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) {
+          if (active) setCooccurrenceProducts([])
+          return
+        }
+        const data = await res.json().catch(() => ({ products: [] }))
+        if (!active) return
+        setCooccurrenceProducts(Array.isArray(data?.products) ? data.products : [])
+      } catch {
+        if (active) setCooccurrenceProducts([])
+      }
+    }
+
+    run()
+    return () => {
+      active = false
+    }
+  }, [product?.id])
   
   // URL 쿼리 파라미터로 프로모션 모달 자동 열기
   useEffect(() => {
@@ -106,13 +137,6 @@ export default function ProductDetailPageClient({
   // 품절 여부 확인
   const soldOut = product ? isSoldOut(product.status) : false
 
-  const pricing = product
-    ? getFinalPricing({
-        basePrice: product.price,
-        promotion: product.promotion,
-      })
-    : null
-  
   // 최종 가격 계산
   const getDiscountPercent = useCallback(() => {
     if (!product) return 0
@@ -264,8 +288,6 @@ export default function ProductDetailPageClient({
                 averageRating={averageRating}
                 onReviewClick={handleReviewClick}
               />
-              
-              <ProductPrice product={product} />
 
               <p className="text-sm text-gray-600 mb-4">
                 <span className="font-medium text-gray-900">배송 기간:</span> 평균 1~2일 (주말 및 공휴일 제외)
@@ -290,20 +312,6 @@ export default function ProductDetailPageClient({
                   </h3>
 
                   <div className="flex items-end justify-between">
-                    {/* 가격: 왼쪽 할인가(총액), 오른쪽 정상가(총액) */}
-                    {pricing && (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-gray-900">
-                          {formatPrice(pricing.finalPrice * quantity)}원
-                        </span>
-                        {pricing.finalPrice !== product.price && (
-                          <span className="text-xs text-gray-400 line-through">
-                            {formatPrice(product.price * quantity)}원
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {/* 수량 조절 */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center border border-gray-300 rounded-full bg-white px-3 py-1.5">
@@ -392,6 +400,21 @@ export default function ProductDetailPageClient({
       <div className="lg:hidden">
         <ProductInfoButtons product={product} />
       </div>
+
+      {cooccurrenceProducts.length > 0 && (
+        <section className="px-4 py-5 bg-white">
+          <h3 className="text-base font-bold text-gray-900 mb-3">
+            이 상품과 함께 많이 구매했어요
+          </h3>
+          <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory">
+            {cooccurrenceProducts.map((item) => (
+              <div key={`co-${item.id}`} className="w-36 shrink-0 snap-start">
+                <ProductCard product={item} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       
       <ProductDescription
         product={product}

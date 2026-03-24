@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { CartItem } from '@/lib/store'
-import { formatPrice } from '@/lib/utils/utils'
 import { isSoldOut } from '@/lib/product/product-utils'
 
 interface GroupedItems {
@@ -42,8 +41,8 @@ export default function CartItemList({
                   type="checkbox"
                   checked={groupSelected}
                   onChange={() => onToggleSelectGroup(groupId)}
-                  className="w-5 h-5 border-gray-300 focus:ring-red-600 accent-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ accentColor: '#dc2626' }}
+                  className="w-5 h-5 border-gray-300 focus:ring-green-800 accent-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ accentColor: '#16a34a' }}
                 />
                 <span className="text-base font-medium text-gray-900">
                   {groupItems[0].promotion_type || '2+1'} 적용
@@ -91,22 +90,6 @@ export default function CartItemList({
                         </Link>
                       </div>
 
-                      <div className="flex-1">
-                        {item.discount_percent === 100 ? (
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm text-gray-500 line-through">
-                              {formatPrice(item.price)}원
-                            </div>
-                            <div className="text-lg font-bold text-gray-900">
-                              0원
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-lg font-bold text-gray-900">
-                            {formatPrice(item.price)}원
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -171,8 +154,8 @@ export default function CartItemList({
                         onToggleSelect(item.id!)
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 border-gray-300 focus:ring-red-600 bg-white accent-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ accentColor: '#dc2626' }}
+                      className="w-5 h-5 border-gray-300 focus:ring-green-800 bg-white accent-green-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ accentColor: '#16a34a' }}
                     />
                   </div>
                 )}
@@ -214,33 +197,7 @@ export default function CartItemList({
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    {item.discount_percent && item.discount_percent > 0 ? (
-                      <>
-                        <div className="text-xs text-gray-500 line-through mt-0.5">
-                          {formatPrice(item.price * item.quantity)}원
-                        </div>
-                        <div className="flex items-baseline gap-2 mt-0">
-                          <span className="text-base md:text-lg font-bold text-red-600">{item.discount_percent}%</span>
-                          <span className="text-lg md:text-xl font-extrabold text-gray-900">
-                            {formatPrice(Math.round(item.price * (100 - item.discount_percent) / 100) * item.quantity)}
-                          </span>
-                          <span className="text-gray-600 text-sm">원</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="invisible h-2 leading-none">.</div>
-                        <div className="flex items-baseline gap-1 mt-0">
-                          <span className="text-lg md:text-xl font-bold text-gray-900">
-                            {formatPrice(item.price * item.quantity)}
-                          </span>
-                          <span className="text-gray-600 text-sm">원</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                <div className="flex items-center justify-end">
                   <div className="flex flex-col items-end">
                     <div className="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
                       <button

@@ -118,7 +118,7 @@ export default function CouponModal({
                       )}
                     </div>
                     {!canUse && (
-                      <div className="text-xs text-red-600 mt-2">
+                      <div className="text-xs text-green-800 mt-2">
                         최소 구매 금액 미달
                       </div>
                     )}

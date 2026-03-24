@@ -286,7 +286,7 @@ export default function ReviewWriteModal({
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(index)}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-lg p-1 hover:bg-red-600"
+                    className="absolute top-0 right-0 bg-green-1000 text-white rounded-bl-lg p-1 hover:bg-green-800"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

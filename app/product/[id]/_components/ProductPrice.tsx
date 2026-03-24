@@ -23,7 +23,7 @@ export default function ProductPrice({ product }: ProductPriceProps) {
             {formatPrice(pricing.basePrice)}원
           </div>
           <div className="flex items-baseline mb-2">
-            <span className="text-3xl font-bold text-red-600">{pricing.discountPercent}%</span>
+            <span className="text-3xl font-bold text-green-800">{pricing.discountPercent}%</span>
             <span className="text-3xl font-extrabold text-gray-900 ml-2">
               {formatPrice(pricing.finalPrice)}
             </span>

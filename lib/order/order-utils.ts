@@ -134,18 +134,18 @@ export function getStatusTextColor(status: string): string {
       return 'text-cyan-600'
     case 'DELIVERED':
     case 'CONFIRMED':
-      return 'text-green-600'
+      return 'text-green-800'
     case 'cancelled':
-      return 'text-red-600'
+      return 'text-green-800'
     case 'payment_error':
-      return 'text-red-600'
+      return 'text-green-800'
     // 하위 호환성
     case 'paid':
       return 'text-blue-600'
     case 'shipped':
       return 'text-cyan-600'
     case 'delivered':
-      return 'text-green-600'
+      return 'text-green-800'
     default:
       return 'text-gray-600'
   }
@@ -159,7 +159,7 @@ export function getStatusColor(status: string): string {
     case 'pending':
       return 'bg-yellow-100 text-yellow-800'
     case 'ORDER_RECEIVED':
-      return 'bg-blue-100 text-red-600'
+      return 'bg-blue-100 text-green-800'
     case 'PREPARING':
       return 'bg-purple-100 text-purple-800'
     case 'IN_TRANSIT':
@@ -167,18 +167,18 @@ export function getStatusColor(status: string): string {
     case 'DELIVERED':
     case 'CONFIRMED':
     case 'gift_received':
-      return 'bg-green-100 text-green-800'
+      return 'bg-green-200 text-green-900'
     case 'cancelled':
-      return 'bg-red-100 text-red-800'
+      return 'bg-green-200 text-green-900'
     case 'payment_error':
-      return 'bg-red-100 text-red-800'
+      return 'bg-green-200 text-green-900'
     // 하위 호환성
     case 'paid':
-      return 'bg-blue-100 text-red-600'
+      return 'bg-blue-100 text-green-800'
     case 'shipped':
       return 'bg-cyan-100 text-cyan-800'
     case 'delivered':
-      return 'bg-green-100 text-green-800'
+      return 'bg-green-200 text-green-900'
     default:
       return 'bg-gray-100 text-gray-800'
   }

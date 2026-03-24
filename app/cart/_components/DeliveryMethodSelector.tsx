@@ -31,7 +31,7 @@ export default function DeliveryMethodSelector({
           onClick={() => onDeliveryMethodChange('regular')}
           className={`py-2.5 px-3 rounded-lg text-sm font-medium transition ${
             deliveryMethod === 'regular'
-              ? 'bg-red-600 text-white'
+              ? 'bg-green-800 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -41,7 +41,7 @@ export default function DeliveryMethodSelector({
           onClick={() => onDeliveryMethodChange('quick')}
           className={`py-2.5 px-3 rounded-lg text-sm font-medium transition ${
             deliveryMethod === 'quick'
-              ? 'bg-red-600 text-white'
+              ? 'bg-green-800 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -51,7 +51,7 @@ export default function DeliveryMethodSelector({
           onClick={() => onDeliveryMethodChange('pickup')}
           className={`py-2.5 px-3 rounded-lg text-sm font-medium transition ${
             deliveryMethod === 'pickup'
-              ? 'bg-red-600 text-white'
+              ? 'bg-green-800 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -65,7 +65,7 @@ export default function DeliveryMethodSelector({
           <select
             value={quickDeliveryArea}
             onChange={(e) => onQuickDeliveryAreaChange(e.target.value)}
-            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
           >
             <option value="">지역 선택</option>
             {QUICK_DELIVERY_AREAS.map(area => (
@@ -75,7 +75,7 @@ export default function DeliveryMethodSelector({
           <select
             value={quickDeliveryTime}
             onChange={(e) => onQuickDeliveryTimeChange(e.target.value)}
-            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
           >
             <option value="">시간대 선택</option>
             {QUICK_DELIVERY_TIME_SLOTS.map(time => (
@@ -91,7 +91,7 @@ export default function DeliveryMethodSelector({
           <select
             value={pickupTime}
             onChange={(e) => onPickupTimeChange(e.target.value)}
-            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm md:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent"
           >
             <option value="">시간 선택</option>
             {PICKUP_TIME_SLOTS.map(time => (

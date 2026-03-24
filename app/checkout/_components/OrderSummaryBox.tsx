@@ -76,19 +76,19 @@ export default function OrderSummaryBox({
             {discountAmount > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-600">즉시할인</span>
-                <span className="font-semibold text-red-600">-{formatPrice(discountAmount)}원</span>
+                <span className="font-semibold text-green-800">-{formatPrice(discountAmount)}원</span>
               </div>
             )}
             {couponDiscount > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-600">쿠폰 할인</span>
-                <span className="font-semibold text-red-600">-{formatPrice(couponDiscount)}원</span>
+                <span className="font-semibold text-green-800">-{formatPrice(couponDiscount)}원</span>
               </div>
             )}
             {usedPoints > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-600">포인트 사용</span>
-                <span className="font-semibold text-red-600">-{formatPrice(usedPoints)}원</span>
+                <span className="font-semibold text-green-800">-{formatPrice(usedPoints)}원</span>
               </div>
             )}
             <div className="flex justify-between">

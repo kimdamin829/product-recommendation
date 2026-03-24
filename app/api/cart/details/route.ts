@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/supabase-server'
-import { extractActivePromotion } from '@/lib/product/product.service'
-import { getFinalPricing } from '@/lib/product/product.pricing'
+import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,73 +24,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ details: [] })
     }
 
-    const supabase = await createSupabaseServerClient()
-
-    const selectFields = `
-      id,
-      slug,
-      name,
-      price,
-      brand,
-      status,
-      weight_gram,
-      promotion_products (
-        promotion_id,
-        promotions (
-          id,
-          type,
-          buy_qty,
-          discount_percent,
-          is_active
-        )
-      )
-    `
+    const supabase = createSupabaseAdminClient()
+    const numericIds = ids.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    if (numericIds.length === 0) {
+      return NextResponse.json({ details: [] })
+    }
 
     const { data: products, error } = await supabase
-      .from('products')
-      .select(selectFields)
-      .in('id', ids)
+      .from('demo_products')
+      .select('product_id, product_name')
+      .in('product_id', numericIds)
 
     if (error) {
       console.error('[cart/details] 상품 조회 실패:', error)
       return NextResponse.json({ error: '상품 조회 실패' }, { status: 500 })
     }
 
-    const productIds = (products || []).map((p: any) => p.id).filter(Boolean)
-    let imageMap: Record<string, string | null> = {}
-    if (productIds.length > 0) {
-      const { data: imagesData } = await supabase
-        .from('product_images')
-        .select('product_id, image_url')
-        .in('product_id', productIds)
-        .order('priority', { ascending: true })
-        .order('created_at', { ascending: true })
-
-      const firstByProduct = new Map<string, string | null>()
-      imagesData?.forEach((img: any) => {
-        if (img?.product_id && !firstByProduct.has(img.product_id)) {
-          firstByProduct.set(img.product_id, img.image_url || null)
-        }
-      })
-      imageMap = Object.fromEntries(firstByProduct)
-    }
-
     const details = (products || []).map((product: any) => {
-      const promotion = extractActivePromotion(product)
-      const pricing = getFinalPricing({
-        basePrice: product?.price ?? 0,
-        promotion,
-        weightGram: product?.weight_gram,
-      })
       return {
-        productId: product.id,
-        slug: product.slug ?? null,
-        name: product.name ?? '',
-        price: product.price ?? 0,
-        brand: product.brand ?? null,
-        status: product.status ?? 'active',
-        imageUrl: imageMap[product.id] ?? null,
-        discount_percent: pricing.discountPercent ?? 0,
+        productId: String(product.product_id),
+        slug: null,
+        name: product.product_name ?? '',
+        price: 0,
+        brand: null,
+        status: 'active',
+        imageUrl: null,
+        discount_percent: 0,
       }
     })
 
