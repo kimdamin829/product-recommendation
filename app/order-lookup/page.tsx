@@ -289,8 +289,12 @@ function OrderLookupResult({
           {order.status === 'CONFIRMED' && (
             <button
               type="button"
-              onClick={() => { window.location.href = `/auth/login?next=${encodeURIComponent('/profile/reviews')}` }}
-              className="flex-1 min-w-[100px] py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition"
+              onClick={(e) => {
+                e.preventDefault()
+                // 리뷰 기능 비활성화: 아무 동작도 하지 않음
+              }}
+              disabled
+              className="flex-1 min-w-[100px] py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               후기 작성
             </button>

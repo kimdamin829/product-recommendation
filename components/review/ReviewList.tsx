@@ -242,10 +242,12 @@ export default function ReviewList({ productId, onWriteReview, limit = 10, showV
         {/* 리뷰 작성하기 버튼 */}
         {user && (
           <button
-            onClick={() => {
-              router.push('/profile/reviews')
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
             }}
-            className="text-sm md:text-base text-blue-600 font-bold hover:underline"
+            disabled
+            className="text-sm md:text-base text-blue-600 font-bold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             리뷰 작성하기
           </button>

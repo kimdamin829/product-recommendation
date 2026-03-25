@@ -102,7 +102,8 @@ export function useCart() {
     sessionStorage.setItem('pickupTime', pickupTime)
     sessionStorage.setItem('quickDeliveryArea', quickDeliveryArea)
     sessionStorage.setItem('quickDeliveryTime', quickDeliveryTime)
-    router.push('/checkout')
+    // checkout 페이지를 제거했으므로 주문 목록으로 이동
+    router.push('/orders')
   }, [router, deliveryMethod, pickupTime, quickDeliveryArea, quickDeliveryTime])
 
   const handleGuestCheckout = useCallback(() => {

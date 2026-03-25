@@ -1,9 +1,9 @@
 'use client'
 
-import useSWR from 'swr'
-import { useAuth } from '@/lib/auth/auth-context'
-import { defaultFetcher } from './fetcher'
-import { UserCoupon } from '@/lib/supabase/supabase'
+// 데모 환경에서는 쿠폰 기능을 비활성화한다.
+// (UI는 남기되) 실제 API 호출을 하지 않기 위해 SWR 자체를 사용하지 않는다.
+
+import type { UserCoupon } from '@/lib/supabase/supabase'
 
 export interface CouponsResponse {
   coupons?: UserCoupon[]
@@ -15,17 +15,11 @@ export interface CouponsResponse {
  * 포커스 복귀 시 재검증: 다른 곳에서 쿠폰 사용 후 돌아오면 최신 반영
  */
 export function useCoupons(includeUsed: boolean) {
-  const { user } = useAuth()
-  const key = user?.id ? `/api/coupons?includeUsed=${includeUsed}` : null
-  const { data, error, isLoading, mutate } = useSWR<CouponsResponse>(
-    key,
-    defaultFetcher,
-    { revalidateOnFocus: true, dedupingInterval: 5000 }
-  )
+  void includeUsed
   return {
-    coupons: data?.coupons ?? [],
-    error: error ?? null,
-    isLoading,
-    mutate,
+    coupons: [] as UserCoupon[],
+    error: null,
+    isLoading: false,
+    mutate: async () => {},
   }
 }

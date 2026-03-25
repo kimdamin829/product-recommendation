@@ -1,8 +1,6 @@
 'use client'
-
-import useSWR from 'swr'
-import { useAuth } from '@/lib/auth/auth-context'
-import { defaultFetcher } from './fetcher'
+// 데모 환경에서는 포인트 기능을 비활성화한다.
+// (UI는 남기되) 실제 API 호출을 하지 않기 위해 SWR 자체를 사용하지 않는다.
 
 export interface UserPoints {
   total_points: number
@@ -27,17 +25,11 @@ export interface PointsPending {
  * 포커스 복귀 시 재검증: 다른 탭에서 결제/리뷰 등 후 돌아오면 최신 포인트 반영
  */
 export function usePoints() {
-  const { user } = useAuth()
-  const { data, error, isLoading, mutate } = useSWR<{ userPoints: UserPoints }>(
-    user?.id ? '/api/points' : null,
-    defaultFetcher,
-    { revalidateOnFocus: true, dedupingInterval: 5000 }
-  )
   return {
-    totalPoints: data?.userPoints?.total_points ?? 0,
-    error: error ?? null,
-    isLoading,
-    mutate,
+    totalPoints: 0,
+    error: null,
+    isLoading: false,
+    mutate: async () => {},
   }
 }
 
@@ -45,17 +37,12 @@ export function usePoints() {
  * 포인트 내역 (포인트 페이지)
  */
 export function usePointsHistory(limit = 50) {
-  const { user } = useAuth()
-  const { data, error, isLoading, mutate } = useSWR<{ history: PointsHistoryItem[] }>(
-    user?.id ? `/api/points/history?limit=${limit}` : null,
-    defaultFetcher,
-    { revalidateOnFocus: true, dedupingInterval: 8000 }
-  )
+  void limit
   return {
-    history: data?.history ?? [],
-    error: error ?? null,
-    isLoading,
-    mutate,
+    history: [] as PointsHistoryItem[],
+    error: null,
+    isLoading: false,
+    mutate: async () => {},
   }
 }
 
@@ -63,17 +50,12 @@ export function usePointsHistory(limit = 50) {
  * 적립 예정 포인트 (포인트 페이지)
  */
 export function usePointsPending() {
-  const { user } = useAuth()
-  const { data, error, isLoading, mutate } = useSWR<PointsPending>(
-    user?.id ? '/api/points/pending' : null,
-    defaultFetcher,
-    { revalidateOnFocus: true, dedupingInterval: 5000 }
-  )
+  // limit/pending param 없음: 단순히 포인트 기능 비활성화 상태 유지
   return {
-    pendingPoints: data?.pendingPoints ?? 0,
-    pendingCount: data?.pendingCount ?? 0,
-    error: error ?? null,
-    isLoading,
-    mutate,
+    pendingPoints: 0,
+    pendingCount: 0,
+    error: null,
+    isLoading: false,
+    mutate: async () => {},
   }
 }

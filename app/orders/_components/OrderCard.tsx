@@ -183,8 +183,12 @@ export default function OrderCard({
         {order.status === 'CONFIRMED' && isReviewWindowOpen && (
           <button
             type="button"
-            onClick={() => router.push('/profile/reviews')}
-            className="flex-1 min-w-[100px] py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            disabled
+            className="flex-1 min-w-[100px] py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             후기 작성
           </button>

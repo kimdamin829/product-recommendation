@@ -21,7 +21,8 @@ function buildPendingRedirectResponse(
     }
   })
   const cartRemove = Array.from(cartRemoveMap.values())
-  const redirectTo = `/checkout/toss/success?orderId=${encodeURIComponent(orderId)}&confirmed=1`
+  // checkout 페이지가 제거되었으므로, 성공/대기 화면은 주문 목록으로 이동
+  const redirectTo = `/orders`
   return { redirectTo, orderId, cartRemove, cartUserId, processingPending: true as const }
 }
 

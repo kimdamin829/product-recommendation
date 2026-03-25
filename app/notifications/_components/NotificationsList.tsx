@@ -47,8 +47,13 @@ function renderContent(notification: NotificationItem, router: ReturnType<typeof
 
   const makeLink = (label: string, href: string) => (
     <button
-      onClick={() => router.push(href)}
-      className="text-blue-600 hover:text-green-800 underline font-medium"
+      onClick={(e) => {
+        // 쿠폰/포인트/리뷰 기능을 비활성화했으므로 해당 링크는 동작하지 않음
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+      disabled={href === '/profile/reviews' || href === '/profile/coupons' || href === '/profile/points'}
+      className="text-blue-600 hover:text-green-800 underline font-medium disabled:opacity-60 disabled:cursor-not-allowed"
     >
       {label}
     </button>

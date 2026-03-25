@@ -158,7 +158,7 @@ export default function CategoriesPage() {
         <section className="container mx-auto px-4">
           <h2 className="text-sm text-gray-500 mb-4">카테고리</h2>
           <div className="grid grid-cols-2 gap-x-3">
-            {CATEGORIES.filter((c) => c !== '전체' && c !== '선물세트').map((category) => (
+            {CATEGORIES.filter((c) => c !== '전체').map((category) => (
               <Link
                 key={category}
                 href={getCategoryPath(category)}

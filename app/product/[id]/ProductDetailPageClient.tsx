@@ -208,7 +208,7 @@ export default function ProductDetailPageClient({
     if (!user) {
       setShowLoginPrompt(true)
     } else {
-      router.push('/checkout')
+      router.push('/orders')
     }
   }, [product, quantity, user, getDiscountPercent, setDirectPurchaseItems, router])
   
@@ -381,8 +381,8 @@ export default function ProductDetailPageClient({
       <LoginPromptModal
         show={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
-        onGuestCheckout={() => router.push('/checkout')}
-        loginNextUrl="/checkout"
+        onGuestCheckout={() => router.push('/orders')}
+        loginNextUrl="/orders"
       />
       
       <PromotionModalWrapper />

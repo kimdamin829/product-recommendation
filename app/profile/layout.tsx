@@ -120,15 +120,18 @@ export default function ProfileLayout({
             <nav className="space-y-0.5">
               {sidebarMenus.map((item) => {
                 const isActive = pathname === item.href || (item.href === '/profile' && pathname === '/profile')
+                const disabled = item.href === '/profile/coupons' || item.href === '/profile/points'
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={disabled ? (e) => e.preventDefault() : undefined}
+                    aria-disabled={disabled ? 'true' : undefined}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition ${
                       isActive
                         ? 'bg-primary-100 text-primary-900'
                         : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                    } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
                   >
                     <SidebarIcon type={item.icon} />
                     {item.label}
@@ -141,15 +144,18 @@ export default function ProfileLayout({
               <nav className="space-y-0.5">
                 {sidebarInfo.map((item) => {
                   const isActive = pathname === item.href
+                  const disabled = item.href === '/profile/reviews'
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={disabled ? (e) => e.preventDefault() : undefined}
+                      aria-disabled={disabled ? 'true' : undefined}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition ${
                         isActive
                           ? 'bg-primary-100 text-primary-900'
                           : 'text-gray-700 hover:bg-gray-100'
-                      }`}
+                      } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
                     >
                       <SidebarIcon type={item.icon} />
                       {item.label}

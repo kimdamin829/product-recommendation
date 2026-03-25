@@ -483,7 +483,7 @@ export function useCheckout() {
       sessionStorage.setItem(`toss_checkout_${orderId}`, JSON.stringify(meta))
 
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-      const mockSuccessUrl = `${baseUrl}/checkout/toss/success?paymentKey=MOCK_${orderId}&orderId=${orderId}&mock=1`
+      const mockSuccessUrl = `${baseUrl}/orders?paymentKey=MOCK_${orderId}&orderId=${orderId}&mock=1`
       router.push(mockSuccessUrl)
     }
 

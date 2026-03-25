@@ -158,8 +158,8 @@ function ProductCard({ product }: ProductCardProps) {
               loading="lazy"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm bg-gray-300">
-              이미지 없음
+            <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-sm bg-gray-300 px-2 text-center line-clamp-2">
+              {product.name}
             </div>
           )}
           {/* 품절 오버레이 */}

@@ -182,6 +182,8 @@ function ProfilePageContent() {
                     </Link>
                     <Link
                       href="/profile/points"
+                      onClick={(e) => e.preventDefault()}
+                      aria-disabled="true"
                       className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">포인트</div>
@@ -189,6 +191,8 @@ function ProfilePageContent() {
                     </Link>
                     <Link
                       href="/profile/coupons"
+                      onClick={(e) => e.preventDefault()}
+                      aria-disabled="true"
                       className="px-4 py-2 bg-white rounded-lg hover:bg-gray-50 transition text-left border border-green-400"
                     >
                       <div className="text-sm text-gray-900 mb-0.5">쿠폰</div>
@@ -216,7 +220,9 @@ function ProfilePageContent() {
               {/* 나의 리뷰 */}
               <Link
                 href="/profile/reviews"
-                className="flex items-center justify-between p-4 hover:bg-gray-50 transition"
+                onClick={(e) => e.preventDefault()}
+                aria-disabled="true"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition cursor-not-allowed opacity-60"
               >
                 <div className="flex items-center space-x-3">
                   <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
