@@ -73,7 +73,7 @@ export function useCart() {
   }, [items])
 
   // Handlers
-  const handleCheckout = useCallback(() => {
+  const validateCheckoutAndPromptLogin = useCallback(() => {
     const selectedItems = getSelectedItems()
 
     const validation = validateCheckout({
@@ -86,15 +86,15 @@ export function useCart() {
 
     if (!validation.valid) {
       toast.error(validation.error || '주문 정보를 확인해주세요.', { duration: 3000 })
-      return
+      return false
     }
 
     if (!user) {
       setShowLoginPrompt(true)
-      return
+      return false
     }
 
-    goToCheckout()
+    return true
   }, [getSelectedItems, user, deliveryMethod, pickupTime, quickDeliveryArea, quickDeliveryTime])
 
   const goToCheckout = useCallback(() => {
@@ -105,6 +105,11 @@ export function useCart() {
     // checkout 페이지를 제거했으므로 주문 목록으로 이동
     router.push('/orders')
   }, [router, deliveryMethod, pickupTime, quickDeliveryArea, quickDeliveryTime])
+
+  const handleCheckout = useCallback(() => {
+    if (!validateCheckoutAndPromptLogin()) return
+    goToCheckout()
+  }, [validateCheckoutAndPromptLogin, goToCheckout])
 
   const handleGuestCheckout = useCallback(() => {
     const selectedItems = getSelectedItems()
@@ -155,6 +160,7 @@ export function useCart() {
     setQuickDeliveryTime,
     setShowLoginPrompt,
     closeLoginPrompt,
+    validateCheckoutAndPromptLogin,
     handleCheckout,
     handleGuestCheckout,
     removeCartItemWithDB,

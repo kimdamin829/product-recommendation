@@ -4,6 +4,7 @@ import BottomNavbar from '@/components/layout/BottomNavbar'
 import ScrollToTop from '@/components/common/ScrollToTop'
 import PromotionModalWrapper from '@/components/common/PromotionModalWrapper'
 import CategoryGrid from '@/components/sections/CategoryGrid'
+import HomeTasteSection from '@/components/sections/HomeTasteSection'
 import ProductCard from '@/components/product/ProductCard'
 import { getServerBaseUrl } from '@/lib/utils/server-url'
 import Image from 'next/image'
@@ -62,6 +63,8 @@ export default async function Home() {
         <section className="pt-0 pb-0 bg-gray-100">
           <CategoryGrid selectedCategory="" />
         </section>
+
+        <HomeTasteSection />
 
         <section className="px-4 py-3 pb-24">
           <h2 className="text-lg font-bold text-gray-900 mb-3">전체 상품</h2>

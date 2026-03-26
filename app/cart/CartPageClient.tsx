@@ -11,6 +11,7 @@ import BottomNavbar from '@/components/layout/BottomNavbar'
 import FreeShippingProgress from '@/components/common/FreeShippingProgress'
 import PromotionModalWrapper from '@/components/common/PromotionModalWrapper'
 import ProductCard from '@/components/product/ProductCard'
+import toast from 'react-hot-toast'
 import { isSoldOut } from '@/lib/product/product-utils'
 import { useCart } from '@/lib/cart'
 import { Product } from '@/lib/supabase/supabase'
@@ -24,6 +25,10 @@ function CartPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const [nextPurchaseProducts, setNextPurchaseProducts] = useState<Product[]>([])
+  const [showCooccurrenceModal, setShowCooccurrenceModal] = useState(false)
+  const [cooccurrenceProducts, setCooccurrenceProducts] = useState<Product[]>([])
+  const [isLoadingCooccurrence, setIsLoadingCooccurrence] = useState(false)
+  const [isPaying, setIsPaying] = useState(false)
   
   const {
     mounted,
@@ -48,11 +53,80 @@ function CartPageContent() {
     setQuickDeliveryTime,
     setShowLoginPrompt,
     closeLoginPrompt,
+    validateCheckoutAndPromptLogin,
     handleCheckout,
     handleGuestCheckout,
     removeCartItemWithDB,
     updateCartQuantityWithDB,
   } = useCart()
+
+  const openCooccurrenceModal = async () => {
+    if (!validateCheckoutAndPromptLogin()) return
+
+    const selectedProductIds = getSelectedItems()
+      .filter((item) => !isSoldOut(item.status))
+      .map((item) => item.productId)
+      .filter(Boolean)
+
+    setShowCooccurrenceModal(true)
+    setIsLoadingCooccurrence(true)
+    try {
+      const res = await fetch('/api/recommendations/cart-cooccurrence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds: selectedProductIds }),
+      })
+      const data = await res.json().catch(() => ({ products: [] }))
+      setCooccurrenceProducts(Array.isArray(data?.products) ? data.products : [])
+    } catch {
+      setCooccurrenceProducts([])
+      toast.error('추천 상품을 불러오지 못했습니다.')
+    } finally {
+      setIsLoadingCooccurrence(false)
+    }
+  }
+
+  const handleMockPayment = async () => {
+    const selectedItems = getSelectedItems().filter((item) => !isSoldOut(item.status))
+    if (selectedItems.length === 0) {
+      toast.error('결제할 상품이 없습니다.')
+      return
+    }
+
+    setIsPaying(true)
+    try {
+      const res = await fetch('/api/orders/demo-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: selectedItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.error || '결제 처리에 실패했습니다.')
+      }
+
+      await Promise.all(
+        selectedItems
+          .filter((item) => !!item.id)
+          .map((item) =>
+            removeCartItemWithDB(user?.id || null, item.id as string, item.promotion_group_id, item.productId)
+          )
+      )
+
+      setShowCooccurrenceModal(false)
+      toast.success('결제가 완료되었습니다.')
+      router.push('/orders')
+    } catch (error: any) {
+      toast.error(error?.message || '결제 처리에 실패했습니다.')
+    } finally {
+      setIsPaying(false)
+    }
+  }
 
   useEffect(() => {
     if (!user?.id) {
@@ -177,7 +251,7 @@ function CartPageContent() {
               </div>
               <div className="hidden lg:flex mt-2">
                 <button
-                  onClick={handleCheckout}
+                  onClick={openCooccurrenceModal}
                   className="shrink-0 bg-green-800 text-white py-3 text-base font-medium hover:bg-green-800 border-0 flex-1 min-w-0"
                   suppressHydrationWarning
                 >
@@ -194,7 +268,7 @@ function CartPageContent() {
         <div className="w-full flex justify-center">
           <div className="w-full max-w-[480px] bg-white shadow-lg flex">
             <button
-              onClick={handleCheckout}
+              onClick={openCooccurrenceModal}
               className="shrink-0 bg-green-800 text-white py-3 text-base font-medium hover:bg-green-800 border-0 flex-1 min-w-0"
               suppressHydrationWarning
             >
@@ -211,6 +285,59 @@ function CartPageContent() {
         onClose={closeLoginPrompt}
         onGuestCheckout={() => handleGuestCheckout()}
       />
+
+      {showCooccurrenceModal && (
+        <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl bg-white rounded-2xl max-h-[68vh] flex flex-col overflow-hidden">
+            <div className="p-5 md:p-6 flex items-center justify-between">
+              <h3 className="text-lg md:text-xl font-bold text-gray-900">함께 구매하면 좋아요</h3>
+              <button
+                type="button"
+                aria-label="추천 모달 닫기"
+                onClick={() => setShowCooccurrenceModal(false)}
+                className="w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center justify-center"
+              >
+                X
+              </button>
+            </div>
+
+            <div className="px-5 md:px-6 pb-4 overflow-y-auto">
+              {isLoadingCooccurrence ? (
+                <p className="text-sm text-gray-600 py-8 text-center">추천 상품을 불러오는 중입니다.</p>
+              ) : cooccurrenceProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {cooccurrenceProducts.map((item) => (
+                    <div key={`cart-cooccurrence-${item.id}`}>
+                      <ProductCard product={item} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 py-8 text-center">추천할 상품이 아직 없어요.</p>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 p-5 md:px-6 md:py-4 flex gap-2">
+              <button
+                onClick={() => {
+                  setShowCooccurrenceModal(false)
+                  router.push('/products?category=전체')
+                }}
+                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium"
+              >
+                쇼핑하기
+              </button>
+              <button
+                onClick={handleMockPayment}
+                disabled={isPaying}
+                className="flex-1 bg-green-800 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-60"
+              >
+                {isPaying ? '결제 처리 중...' : '결제하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
       {pathname !== '/cart' && <BottomNavbar />}
