@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/supabase-server'
+import { getDemoUserCookieOptions } from '@/lib/auth/demo-cookie'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,13 +26,12 @@ export async function POST(request: NextRequest) {
 
     const res = NextResponse.json({ ok: true, userId })
     res.cookies.set('demo_user_id', userId, {
-      path: '/',
-      sameSite: 'lax',
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30,
+      ...getDemoUserCookieOptions(60 * 60 * 24 * 30),
     })
     return res
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '서버 오류' }, { status: 500 })
+    const message = e?.message || '서버 오류'
+    const isConfigError = message.includes('Supabase 환경 변수')
+    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 500 })
   }
 }
